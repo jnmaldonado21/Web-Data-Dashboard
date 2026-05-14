@@ -1,0 +1,2525 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="[Your Unit] Web Ops — Manager Dashboard. Internal operations tool.">
+  <title>[Your Unit] Web Ops — Manager Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =====================================================
+       DESIGN SYSTEM — Industrial / Editorial
+       IBM Plex family: Mono for data, Sans for prose
+       Dark-first with full light mode via data-theme="light"
+    ===================================================== */
+    :root {
+      /* Shared */
+      --maroon:       #500000;
+      --maroon-mid:   #732f2f;
+      --maroon-light: #a85050;
+      --maroon-pale:  #d1a0a0;
+      --green:        #1a5c2e;
+      --green-bg:     #e8f5ec;
+      --amber:        #7a4a00;
+      --amber-bg:     #fff4e0;
+      --red:          #8c1515;
+      --red-bg:       #fdeaea;
+      --mono:         'IBM Plex Mono', monospace;
+      --sans:         'IBM Plex Sans', sans-serif;
+      --cond:         'IBM Plex Sans Condensed', sans-serif;
+      --header-h:     52px;
+      --radius:       3px;
+      --transition:   0.2s ease;
+    }
+
+    /* Dark theme (default) */
+    [data-theme="dark"] {
+      --bg:           #111111;
+      --bg-card:      #1a1a1a;
+      --bg-header:    #0e0e0e;
+      --bg-input:     #252525;
+      --bg-hover:     #222222;
+      --border:       #333333;
+      --border-light: #2a2a2a;
+      --text-primary: #e8e8e4;
+      --text-secondary:#a8a8a4;
+      --text-muted:   #666660;
+      --text-inverse: #111111;
+      --nav-link:     #888884;
+      --nav-hover:    #e8e8e4;
+      --score-track:  #2a2a2a;
+      --table-stripe: #161616;
+    }
+
+    /* Light theme */
+    [data-theme="light"] {
+      --bg:           #f2f2f0;
+      --bg-card:      #ffffff;
+      --bg-header:    #1a1a1a;
+      --bg-input:     #ffffff;
+      --bg-hover:     #f8f8f6;
+      --border:       #e0e0dc;
+      --border-light: #eeeeea;
+      --text-primary: #1a1a18;
+      --text-secondary:#555552;
+      --text-muted:   #999994;
+      --text-inverse: #ffffff;
+      --nav-link:     #888884;
+      --nav-hover:    #e8e8e4;
+      --score-track:  #e8e8e4;
+      --table-stripe: #f8f8f6;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: var(--bg);
+      transition: background var(--transition), color var(--transition);
+    }
+
+    /* Skip link */
+    .skip { position: absolute; left: -9999px; top: 8px; z-index: 9999;
+      background: var(--maroon); color: #fff; padding: 8px 16px;
+      font-size: 14px; font-weight: 600; border-radius: var(--radius); text-decoration: none; }
+    .skip:focus { left: 12px; }
+
+    /* ---- Loading ---- */
+    #loading {
+      position: fixed; inset: 0; background: #0e0e0e;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; z-index: 9999; transition: opacity 0.3s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .load-label { font-family: var(--mono); font-size: 12px; color: #d1a0a0;
+      letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; }
+    .load-bar { width: 200px; height: 2px; background: #2a2a2a; border-radius: 1px; overflow: hidden; }
+    .load-fill { height: 100%; background: var(--maroon);
+      animation: loadAnim 1.6s ease-in-out infinite; }
+    @keyframes loadAnim {
+      0% { width:0%; margin-left:0 }
+      50% { width:60%; margin-left:40% }
+      100% { width:0%; margin-left:100% }
+    }
+
+    /* ---- Chrome header ---- */
+    .chrome {
+      background: var(--bg-header);
+      border-bottom: 2px solid var(--maroon);
+      position: sticky; top: 0; z-index: 100;
+      height: var(--header-h);
+    }
+    .chrome-inner {
+      max-width: 1400px; margin: 0 auto;
+      padding: 0 16px;
+      height: 100%;
+      display: flex; align-items: stretch; gap: 0;
+    }
+
+    /* Brand */
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      padding-right: 16px;
+      border-right: 1px solid #2a2a2a;
+      flex-shrink: 0;
+    }
+    .brand-bar { width: 5px; height: 28px; background: var(--maroon); border-radius: 1px; }
+    .brand-title { font-family: var(--cond); font-size: 14px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; color: #e8e8e4; line-height: 1; }
+    .brand-sub { font-family: var(--mono); font-size: 9px; color: #666660;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+
+    /* Nav */
+    .chrome-nav {
+      display: flex; align-items: stretch; flex: 1;
+      padding: 0 8px; overflow-x: auto; scrollbar-width: none;
+    }
+    .chrome-nav::-webkit-scrollbar { display: none; }
+    .chrome-nav a {
+      font-family: var(--mono); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--nav-link); text-decoration: none;
+      padding: 0 12px; white-space: nowrap;
+      display: flex; align-items: center;
+      border-right: 1px solid #2a2a2a;
+      transition: color var(--transition), background var(--transition);
+    }
+    .chrome-nav a:hover { color: var(--nav-hover); background: rgba(255,255,255,0.04); }
+    .chrome-nav a:focus { outline: 2px solid var(--maroon); outline-offset: -2px; }
+
+    /* Controls */
+    .chrome-controls {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 0 0 12px; flex-shrink: 0;
+    }
+
+    /* Date range selector */
+    .period-select {
+      font-family: var(--mono); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: var(--bg-input); color: var(--text-primary);
+      border: 1px solid #3a3a3a; border-radius: var(--radius);
+      padding: 5px 10px; cursor: pointer;
+      transition: border-color var(--transition);
+    }
+    [data-theme="light"] .period-select { border-color: #d0d0cc; }
+    .period-select:focus { outline: 2px solid var(--maroon); border-color: var(--maroon); }
+
+    /* Health badge */
+    .health-badge {
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      padding: 4px 10px; border-radius: var(--radius);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .health-good  { background: #1a5c2e22; color: #4ecb71; border: 1px solid #1a5c2e44; }
+    .health-warn  { background: #7a4a0022; color: #f5c96a; border: 1px solid #7a4a0044; }
+    .health-alert { background: #8c151522; color: #f5836a; border: 1px solid #8c151544; }
+    [data-theme="light"] .health-good  { background: var(--green-bg); color: var(--green); border-color: #a8d8b4; }
+    [data-theme="light"] .health-warn  { background: var(--amber-bg); color: var(--amber); border-color: #f5dfa0; }
+    [data-theme="light"] .health-alert { background: var(--red-bg);   color: var(--red);   border-color: #f5c6c6; }
+
+    /* Theme toggle */
+    .theme-toggle {
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: transparent; color: var(--text-secondary);
+      border: 1px solid #3a3a3a; border-radius: var(--radius);
+      padding: 5px 10px; cursor: pointer;
+      transition: all var(--transition);
+    }
+    [data-theme="light"] .theme-toggle { border-color: #d0d0cc; }
+    .theme-toggle:hover { color: var(--text-primary); border-color: var(--maroon); }
+    .theme-toggle:focus { outline: 2px solid var(--maroon); }
+
+    .chrome-timestamp { font-family: var(--mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ---- Dashboard layout ---- */
+    .dashboard { max-width: 1400px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    /* ---- Section ---- */
+    .section { margin-bottom: 32px; scroll-margin-top: calc(var(--header-h) + 12px); }
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 8px;
+    }
+    .section-label {
+      font-family: var(--cond); font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--maroon);
+    }
+    .section-meta { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.05em; }
+    .section-override {
+      font-family: var(--mono); font-size: 10px;
+      background: var(--bg-input); color: var(--text-secondary);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 3px 8px; cursor: pointer; margin-left: auto;
+    }
+    .section-override:focus { outline: 2px solid var(--maroon); }
+
+    /* ---- Cards ---- */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .card-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .card-title { font-family: var(--cond); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .card-body { padding: 16px; }
+
+    /* ---- Grids ---- */
+    .g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 12px; }
+    .g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 12px; }
+    .g2 { display: grid; grid-template-columns: 1fr 1fr;      gap: 10px; margin-bottom: 12px; }
+    .g2-1 { display: grid; grid-template-columns: 2fr 1fr;   gap: 10px; margin-bottom: 12px; }
+    .g1-2 { display: grid; grid-template-columns: 1fr 2fr;   gap: 10px; margin-bottom: 12px; }
+
+    /* ---- KPI tiles ---- */
+    .kpi {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      border-top: 3px solid var(--border); /* overridden by status classes */
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .kpi.ok     { border-top-color: var(--green); }
+    .kpi.warn   { border-top-color: #c87800; }
+    .kpi.alert  { border-top-color: var(--red); }
+    .kpi.neutral{ border-top-color: var(--text-muted); }
+    .kpi.maroon { border-top-color: var(--maroon); }
+    .kpi-label  { font-family: var(--mono); font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px; }
+    .kpi-value  { font-family: var(--mono); font-size: 30px; font-weight: 600;
+      color: var(--text-primary); line-height: 1; margin-bottom: 5px; }
+    .kpi-sub    { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+    .kpi-bench  { font-family: var(--mono); font-size: 11px; color: var(--maroon-light);
+      margin-top: 4px; font-style: italic; }
+    .delta-up   { color: #4ecb71; }
+    .delta-bad  { color: #f5836a; }
+    [data-theme="light"] .delta-up  { color: var(--green); }
+    [data-theme="light"] .delta-bad { color: var(--red); }
+
+    /* ---- Flags ---- */
+    .flag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-family: var(--mono); font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 2px 7px; border-radius: 2px; white-space: nowrap;
+    }
+    .flag::before { content: '●'; font-size: 7px; }
+    .flag.ok      { background: #1a5c2e22; color: #4ecb71; }
+    .flag.warn    { background: #c8780022; color: #f5c96a; }
+    .flag.alert   { background: #8c151522; color: #f5836a; }
+    .flag.info    { background: #1a4a9922; color: #6a9ef5; }
+    .flag.neutral { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+    [data-theme="light"] .flag.ok     { background: var(--green-bg); color: var(--green); }
+    [data-theme="light"] .flag.warn   { background: var(--amber-bg); color: var(--amber); }
+    [data-theme="light"] .flag.alert  { background: var(--red-bg);   color: var(--red); }
+    [data-theme="light"] .flag.info   { background: #e8f0fe;          color: #1a4a99; }
+    [data-theme="light"] .flag.neutral{ background: var(--bg);        color: var(--text-muted); }
+
+    /* ---- State of the Union ---- */
+    .sotu {
+      background: #0e0e0e; border-radius: var(--radius);
+      padding: 20px 22px; margin-bottom: 12px;
+      border-left: 4px solid var(--maroon);
+    }
+    [data-theme="light"] .sotu { background: #1a1a1a; }
+    .sotu-eyebrow { font-family: var(--mono); font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.12em; color: var(--maroon-pale);
+      background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 2px;
+      display: inline-block; margin-bottom: 12px; }
+    .sotu-text { font-size: 14px; color: #c8c8c4; line-height: 1.75; margin-bottom: 14px; }
+    .sotu-text strong { color: #e8e8e4; font-weight: 600; }
+    .sotu-text .g { color: #6ecf8a; font-weight: 600; }
+    .sotu-text .w { color: #f5c96a; font-weight: 600; }
+    .sotu-text .a { color: #f5836a; font-weight: 600; }
+    .sotu-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { font-family: var(--mono); font-size: 10px; padding: 5px 10px;
+      border-radius: 2px; display: flex; align-items: center; gap: 6px; }
+    .chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .chip-g { background: rgba(110,207,138,0.12); color: #6ecf8a; }
+    .chip-g .chip-dot { background: #6ecf8a; }
+    .chip-w { background: rgba(245,201,106,0.12); color: #f5c96a; }
+    .chip-w .chip-dot { background: #f5c96a; }
+    .chip-a { background: rgba(245,131,106,0.12); color: #f5836a; }
+    .chip-a .chip-dot { background: #f5836a; }
+
+    /* Strategic bar */
+    .strat-bar { display: flex; border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 12px; }
+    .strat-item { flex: 1; padding: 12px 14px; border-right: 1px solid var(--border); }
+    .strat-item:last-child { border-right: none; }
+    .strat-lbl { font-family: var(--mono); font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 5px; }
+    .strat-val { font-family: var(--mono); font-size: 20px; font-weight: 600;
+      color: var(--text-primary); line-height: 1; margin-bottom: 3px; }
+    .strat-desc { font-size: 12px; color: var(--text-secondary); }
+
+    /* ---- Score bars ---- */
+    .score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .score-row:last-child { margin-bottom: 0; }
+    .score-name { font-family: var(--mono); font-size: 11px; color: var(--text-secondary);
+      width: 140px; flex-shrink: 0; }
+    .score-track { flex: 1; height: 8px; background: var(--score-track);
+      border-radius: 2px; overflow: visible; position: relative; }
+    .score-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; position: relative; z-index: 1; }
+    /* Target marker */
+    .score-marker {
+      position: absolute; top: -4px; width: 2px; height: 16px;
+      background: var(--text-muted); border-radius: 1px; z-index: 2;
+    }
+    .score-marker-label {
+      position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+      font-family: var(--mono); font-size: 8px; color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .score-val { font-family: var(--mono); font-size: 13px; font-weight: 600;
+      width: 32px; text-align: right; flex-shrink: 0; color: var(--text-primary); }
+
+    /* ---- Tables ---- */
+    .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tbl th { font-family: var(--mono); font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+      padding: 9px 12px; background: var(--bg); border-bottom: 1px solid var(--border);
+      text-align: left; white-space: nowrap; cursor: pointer; user-select: none; }
+    .tbl th:hover { color: var(--text-primary); }
+    .tbl td { padding: 9px 12px; border-bottom: 1px solid var(--border-light);
+      vertical-align: middle; }
+    .tbl tr:last-child td { border-bottom: none; }
+    .tbl tr:hover td { background: var(--bg-hover); }
+    .tbl .mono { font-family: var(--mono); }
+    .tbl .num { font-family: var(--mono); text-align: right; }
+    .tbl .rank { font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+      text-align: center; width: 28px; }
+
+    /* Mini bar */
+    .mbar { display: flex; align-items: center; gap: 6px; }
+    .mbar-track { flex: 1; height: 4px; background: var(--score-track); border-radius: 2px; overflow: hidden; min-width: 40px; }
+    .mbar-fill { height: 100%; border-radius: 2px; background: var(--maroon); }
+    .mbar-fill.g { background: var(--green); }
+    .mbar-fill.a { background: #c87800; }
+    .mbar-fill.r { background: var(--red); }
+    .mbar-val { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); width: 36px; text-align: right; }
+
+    /* ---- Chart containers ---- */
+    .chart-wrap { width: 100%; overflow: hidden; }
+
+    /* Chart toggle tabs */
+    .chart-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+    .chart-tab { font-family: var(--mono); font-size: 10px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 8px 14px; cursor: pointer; color: var(--text-muted);
+      background: transparent; border: none; border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: all var(--transition); }
+    .chart-tab.active { color: var(--maroon-light); border-bottom-color: var(--maroon); }
+    .chart-tab:hover { color: var(--text-primary); }
+    .chart-tab:focus { outline: 2px solid var(--maroon); }
+
+    /* Metric toggles */
+    .metric-toggles { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .metric-toggle { font-family: var(--mono); font-size: 10px; font-weight: 600;
+      letter-spacing: 0.05em; padding: 4px 10px; border-radius: 2px; cursor: pointer;
+      background: var(--bg-input); color: var(--text-muted);
+      border: 1px solid var(--border); transition: all var(--transition); }
+    .metric-toggle.active { background: var(--maroon); color: #fff; border-color: var(--maroon); }
+    .metric-toggle:hover { border-color: var(--maroon-light); }
+    .metric-toggle:focus { outline: 2px solid var(--maroon); }
+
+    /* Dept toggles */
+    .dept-toggles { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+    .dept-toggle { font-family: var(--mono); font-size: 9px; padding: 3px 8px;
+      border-radius: 2px; cursor: pointer; background: var(--bg-input);
+      color: var(--text-muted); border: 1px solid var(--border); transition: all var(--transition); }
+    .dept-toggle.active { color: #fff; border-color: transparent; }
+    .dept-toggle:hover { opacity: 0.85; }
+    .dept-toggle:focus { outline: 2px solid var(--maroon); }
+
+    /* ---- Recommendations ---- */
+    .rec-list { display: flex; flex-direction: column; gap: 8px; }
+    .rec { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px;
+      border-radius: var(--radius); border: 1px solid transparent; }
+    .rec.critical { background: rgba(140,21,21,0.1); border-color: rgba(140,21,21,0.25); }
+    .rec.warning  { background: rgba(200,120,0,0.1); border-color: rgba(200,120,0,0.25); }
+    .rec.info     { background: rgba(26,74,153,0.1); border-color: rgba(26,74,153,0.25); }
+    [data-theme="light"] .rec.critical { background: var(--red-bg);   border-color: #f5c6c6; }
+    [data-theme="light"] .rec.warning  { background: var(--amber-bg); border-color: #f5dfa0; }
+    [data-theme="light"] .rec.info     { background: #e8f0fe;          border-color: #b8ccf8; }
+    .rec-badge { font-family: var(--mono); font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px;
+      border-radius: 2px; flex-shrink: 0; margin-top: 1px; color: #fff; }
+    .rec.critical .rec-badge { background: var(--red); }
+    .rec.warning  .rec-badge { background: #c87800; }
+    .rec.info     .rec-badge { background: #1a4a99; }
+    .rec-body { font-size: 13px; color: var(--text-primary); line-height: 1.5; }
+    .rec-body strong { font-weight: 600; }
+    .rec-action { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ---- Clarity section ---- */
+    .clarity-pending {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 32px 20px; text-align: center; gap: 10px;
+    }
+    .clarity-pending-icon { font-size: 28px; opacity: 0.4; }
+    .clarity-pending-title { font-family: var(--cond); font-size: 14px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+    .clarity-pending-msg { font-size: 13px; color: var(--text-muted); max-width: 400px; line-height: 1.6; }
+
+    /* ---- Signal Report (Daily Download) ---- */
+    .signal-report {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-top: 3px solid var(--maroon); border-radius: var(--radius);
+      padding: 20px 22px; margin-bottom: 12px;
+    }
+    .signal-header { display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .signal-title-block {}
+    .signal-eyebrow { font-family: var(--mono); font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--maroon-light);
+      margin-bottom: 4px; }
+    .signal-title { font-family: var(--cond); font-size: 20px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); }
+    .signal-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .signal-btn { font-family: var(--mono); font-size: 10px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; padding: 7px 14px;
+      border-radius: var(--radius); cursor: pointer; transition: all var(--transition); border: none; }
+    .signal-btn.primary { background: var(--maroon); color: #fff; }
+    .signal-btn.primary:hover { background: var(--maroon-mid); }
+    .signal-btn.secondary { background: var(--bg-input); color: var(--text-primary);
+      border: 1px solid var(--border); }
+    .signal-btn.secondary:hover { border-color: var(--maroon-light); }
+    .signal-btn:focus { outline: 2px solid var(--maroon); }
+    .signal-body { font-size: 14px; color: var(--text-secondary); line-height: 1.8; }
+    .signal-body p { margin-bottom: 12px; }
+    .signal-body p:last-child { margin-bottom: 0; }
+    .signal-body strong { color: var(--text-primary); font-weight: 600; }
+    .signal-body .g { color: #6ecf8a; font-weight: 600; }
+    .signal-body .w { color: #f5c96a; font-weight: 600; }
+    .signal-body .a { color: #f5836a; font-weight: 600; }
+    [data-theme="light"] .signal-body .g { color: var(--green); }
+    [data-theme="light"] .signal-body .w { color: var(--amber); }
+    [data-theme="light"] .signal-body .a { color: var(--red); }
+
+    /* Clarity UX metrics */
+    .ux-metric { display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+    .ux-metric:last-child { border-bottom: none; }
+    .ux-metric-label { font-size: 13px; color: var(--text-secondary); }
+    .ux-metric-value { font-family: var(--mono); font-size: 15px; font-weight: 600;
+      color: var(--text-primary); }
+    .ux-metric-note { font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+      margin-left: 8px; }
+
+    /* ---- Inventory pills ---- */
+    .pill { display: inline-block; font-family: var(--mono); font-size: 9px;
+      font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 99px; }
+    .pill.cascade   { background: rgba(80,0,0,0.2); color: var(--maroon-pale); }
+    .pill.wordpress { background: rgba(26,74,153,0.2); color: #6a9ef5; }
+    .pill.html      { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+    .pill.google    { background: rgba(26,92,46,0.2); color: #4ecb71; }
+    .pill.unknown   { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+    [data-theme="light"] .pill.cascade   { background: rgba(80,0,0,0.08); color: var(--maroon); }
+    [data-theme="light"] .pill.wordpress { background: #e8f0fe; color: #1a4a99; }
+    [data-theme="light"] .pill.html      { background: var(--bg); color: var(--text-muted); }
+    [data-theme="light"] .pill.google    { background: var(--green-bg); color: var(--green); }
+
+    /* ---- Context box ---- */
+    .ctx-box { padding: 12px 14px; border-radius: var(--radius);
+      border-left: 3px solid; margin-bottom: 8px; font-size: 13px; line-height: 1.6; }
+    .ctx-box.maroon { border-color: var(--maroon); background: rgba(80,0,0,0.08); }
+    .ctx-box.amber  { border-color: #c87800;       background: rgba(200,120,0,0.08); }
+    .ctx-box.green  { border-color: var(--green);  background: rgba(26,92,46,0.08); }
+    .ctx-title { font-family: var(--mono); font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+    .ctx-box.maroon .ctx-title { color: var(--maroon-light); }
+    .ctx-box.amber  .ctx-title { color: #f5c96a; }
+    .ctx-box.green  .ctx-title { color: #4ecb71; }
+    [data-theme="light"] .ctx-box.maroon .ctx-title { color: var(--maroon); }
+    [data-theme="light"] .ctx-box.amber  .ctx-title { color: var(--amber); }
+    [data-theme="light"] .ctx-box.green  .ctx-title { color: var(--green); }
+    .ctx-box p { color: var(--text-secondary); }
+
+    /* ---- Department ticket bar chart ---- */
+    .dept-ticket-bar { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+    .dtb-row { display: flex; align-items: center; gap: 10px; }
+    .dtb-label { font-size: 12px; color: var(--text-secondary); width: 180px; flex-shrink: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dtb-track { flex: 1; height: 18px; background: var(--score-track); border-radius: 2px; overflow: hidden; }
+    .dtb-fill { height: 100%; background: var(--maroon); border-radius: 2px;
+      display: flex; align-items: center; padding-left: 8px;
+      font-family: var(--mono); font-size: 10px; font-weight: 600; color: #fff; }
+    .dtb-val { font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+      width: 28px; text-align: right; flex-shrink: 0; }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .g4 { grid-template-columns: repeat(2,1fr); }
+      .g3 { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 768px) {
+      body { font-size: 14px; }
+      .dashboard { padding: 12px 12px 40px; }
+      .chrome-nav { display: none; }
+      .g4, .g3, .g2, .g2-1, .g1-2 { grid-template-columns: 1fr; }
+      .kpi-value { font-size: 26px; }
+      .score-name { width: 90px; font-size: 10px; }
+      .score-val { font-size: 12px; }
+      .strat-bar { flex-direction: column; }
+      .strat-item { border-right: none; border-bottom: 1px solid var(--border); }
+      .strat-item:last-child { border-bottom: none; }
+      .sotu-chips { flex-direction: column; }
+      .dtb-label { width: 120px; }
+      .signal-header { flex-direction: column; }
+      .signal-actions { width: 100%; }
+      .signal-btn { flex: 1; text-align: center; }
+      .metric-toggles, .dept-toggles { gap: 4px; }
+      .chrome-controls { gap: 6px; }
+      .chrome-timestamp { display: none; }
+    }
+    @media (max-width: 480px) {
+      .chrome-controls .period-select { display: none; }
+      .kpi-value { font-size: 22px; }
+      .tbl th:nth-child(n+4), .tbl td:nth-child(n+4) { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .load-fill, .score-fill { animation: none; transition: none; }
+    }
+    a:focus, button:focus, select:focus { outline: 2px solid var(--maroon); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip">Skip to main content</a>
+
+<div id="loading" role="status" aria-live="polite">
+  <div class="load-label">Initializing [Your Unit] Web Ops</div>
+  <div class="load-bar"><div class="load-fill"></div></div>
+</div>
+
+<!-- Chrome header -->
+<header class="chrome" role="banner">
+  <div class="chrome-inner">
+    <div class="brand">
+      <div class="brand-bar" aria-hidden="true"></div>
+      <div>
+        <div class="brand-title">[Your Unit] Web Ops</div>
+        <div class="brand-sub">Manager Dashboard &bull; Internal</div>
+      </div>
+    </div>
+    <nav class="chrome-nav" aria-label="Dashboard sections">
+      <a href="#s-signal">Signal</a>
+      <a href="#s-sotu">Summary</a>
+      <a href="#s-reach">Traffic</a>
+      <a href="#s-quality">Quality</a>
+      <a href="#s-capacity">Capacity</a>
+      <a href="#s-clarity">UX Insight</a>
+      <a href="#s-recs">Recs</a>
+      <a href="#s-inventory">Inventory</a>
+    </nav>
+    <div class="chrome-controls">
+      <div class="chrome-timestamp" id="lastUpdated">Loading&hellip;</div>
+      <select class="period-select" id="periodSelect" aria-label="Select time period" onchange="changePeriod(this.value)">
+        <option value="30">30 days</option>
+        <option value="60">60 days</option>
+        <option value="90" selected>90 days</option>
+        <option value="180">180 days</option>
+        <option value="365">1 year</option>
+      </select>
+      <div class="health-badge" id="healthBadge">—</div>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode" id="themeBtn">
+        ☀ Light
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<div class="dashboard">
+
+  <!-- =============================================
+       SIGNAL REPORT
+  ============================================= -->
+  <section class="section" id="s-signal" aria-labelledby="signal-heading">
+    <div class="section-header">
+      <div class="section-label" id="signal-heading">Signal Report</div>
+      <div class="section-meta">Auto-generated &bull; <span id="signalDate">—</span></div>
+    </div>
+
+    <div class="signal-report">
+      <div class="signal-header">
+        <div class="signal-title-block">
+          <div class="signal-eyebrow">Daily Signal &bull; COAS Web Ecosystem</div>
+          <div class="signal-title">Web Team Status Brief</div>
+        </div>
+        <div class="signal-actions">
+          <button class="signal-btn secondary" onclick="shareSignalEmail()" aria-label="Share signal report via email">
+            ✉ Share via Email
+          </button>
+          <button class="signal-btn primary" onclick="downloadSignal()" aria-label="Download signal report as HTML">
+            ↓ Download Report
+          </button>
+        </div>
+      </div>
+      <div class="signal-body" id="signalBody">
+        Generating signal report&hellip;
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       STATE OF THE UNION
+  ============================================= -->
+  <section class="section" id="s-sotu" aria-labelledby="sotu-heading">
+    <div class="section-header">
+      <div class="section-label" id="sotu-heading">Operational Summary</div>
+      <div class="section-meta">Auto-generated from current data &bull; <span id="sotuPeriod">—</span></div>
+    </div>
+
+    <div class="sotu" role="region" aria-label="Operational summary">
+      <div class="sotu-eyebrow">Auto-analysis</div>
+      <div class="sotu-text" id="sotuText">Generating analysis&hellip;</div>
+      <div class="sotu-chips" id="sotuChips"></div>
+    </div>
+
+    <div class="strat-bar" role="list" aria-label="Strategic priority indicators">
+      <div class="strat-item" role="listitem">
+        <div class="strat-lbl">Priority 1 — Enrollment</div>
+        <div class="strat-val" id="sp-enroll">—</div>
+        <div class="strat-desc">Prospective page visits</div>
+      </div>
+      <div class="strat-item" role="listitem">
+        <div class="strat-lbl">Priority 2 — Quality</div>
+        <div class="strat-val" id="sp-quality">—</div>
+        <div class="strat-desc">Avg. WCAG AA + SEO score</div>
+      </div>
+      <div class="strat-item" role="listitem">
+        <div class="strat-lbl">Priority 3 — Capacity</div>
+        <div class="strat-val" id="sp-capacity">—</div>
+        <div class="strat-desc">Requests handled</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       TRAFFIC & REACH
+  ============================================= -->
+  <section class="section" id="s-reach" aria-labelledby="reach-heading">
+    <div class="section-header">
+      <div class="section-label" id="reach-heading">Traffic &amp; Reach</div>
+      <div class="section-meta">Google Analytics 4 &bull; [your-domain.edu]</div>
+      <select class="section-override" aria-label="Override date range for Traffic section"
+        onchange="overrideSection('reach', this.value)">
+        <option value="">Period: Global</option>
+        <option value="30">30 days</option>
+        <option value="60">60 days</option>
+        <option value="90">90 days</option>
+        <option value="180">180 days</option>
+      </select>
+    </div>
+
+    <div class="g4">
+      <div class="kpi maroon">
+        <div class="kpi-label">Total sessions</div>
+        <div class="kpi-value" id="v-sessions">—</div>
+        <div class="kpi-sub">90-day period</div>
+      </div>
+      <div class="kpi" id="kpi-newusers">
+        <div class="kpi-label">New users</div>
+        <div class="kpi-value" id="v-newusers">—</div>
+        <div class="kpi-sub">First-time visitors</div>
+      </div>
+      <div class="kpi" id="kpi-engage">
+        <div class="kpi-label">Engagement rate</div>
+        <div class="kpi-value" id="v-engage">—</div>
+        <div class="kpi-sub" id="d-engage">Actively reading</div>
+        <div class="kpi-bench" id="b-engage"></div>
+      </div>
+      <div class="kpi" id="kpi-duration">
+        <div class="kpi-label">Avg. session duration</div>
+        <div class="kpi-value" id="v-duration">—</div>
+        <div class="kpi-sub" id="d-duration">Per visit</div>
+        <div class="kpi-bench" id="b-duration"></div>
+      </div>
+    </div>
+
+    <!-- Traffic explorer -->
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-head">
+        <div class="card-title">Department traffic explorer</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <select id="explorerPeriod" class="section-override" aria-label="Explorer timeframe"
+            style="display:none" onchange="changeExplorerPeriod(this.value)">
+            <option value="30">30 days</option>
+            <option value="60">60 days</option>
+            <option value="90" selected>90 days</option>
+            <option value="180">180 days</option>
+            <option value="365">1 year</option>
+          </select>
+          <span class="flag neutral" id="trendFlag">Loading</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <!-- Chart type tabs -->
+        <div class="chart-tabs" role="tablist" aria-label="Chart type">
+          <button class="chart-tab active" role="tab" aria-selected="true"
+            onclick="switchChartType('bar', this)">Bar chart</button>
+          <button class="chart-tab" role="tab" aria-selected="false"
+            onclick="switchChartType('line', this)">Line over time</button>
+        </div>
+
+        <!-- Metric selector — radio style, one click switches -->
+        <div class="metric-toggles" id="metricToggles" role="radiogroup" aria-label="Select metric">
+          <button class="metric-toggle active" role="radio" aria-checked="true"
+            onclick="selectMetric('sessions', this)">Sessions</button>
+          <button class="metric-toggle" role="radio" aria-checked="false"
+            onclick="selectMetric('newUsers', this)">New Users</button>
+          <button class="metric-toggle" role="radio" aria-checked="false"
+            onclick="selectMetric('bounceRate', this)">Bounce Rate</button>
+          <button class="metric-toggle" role="radio" aria-checked="false"
+            onclick="selectMetric('avgDuration', this)">Time on Page</button>
+        </div>
+
+        <!-- Dept toggles (line chart only) — all 19, with select all/none -->
+        <div id="deptTogglesWrap" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em">Departments</span>
+            <div style="display:flex;gap:8px">
+              <button onclick="selectAllDepts(true)"  style="font-family:var(--mono);font-size:9px;background:transparent;color:var(--text-muted);border:none;cursor:pointer;padding:0;text-decoration:underline">All</button>
+              <button onclick="selectAllDepts(false)" style="font-family:var(--mono);font-size:9px;background:transparent;color:var(--text-muted);border:none;cursor:pointer;padding:0;text-decoration:underline">None</button>
+            </div>
+          </div>
+          <div class="dept-toggles" id="deptToggles" role="group" aria-label="Toggle departments"></div>
+        </div>
+
+        <!-- Chart canvas area -->
+        <div class="chart-wrap" id="trafficChart" style="min-height:220px"></div>
+      </div>
+    </div>
+
+    <div class="g2-1">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Monthly trend &mdash; sessions</div></div>
+        <div class="card-body" style="padding:12px 16px 16px">
+          <div id="trendChart" style="width:100%;height:80px"></div>
+          <div id="trendLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--mono);font-size:9px;color:var(--text-muted)"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Top pages</div></div>
+        <div style="padding:8px 0" id="topPages"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       CONTENT QUALITY
+  ============================================= -->
+  <section class="section" id="s-quality" aria-labelledby="quality-heading">
+    <div class="section-header">
+      <div class="section-label" id="quality-heading">Content Quality</div>
+      <div class="section-meta">Siteimprove &bull; Cascade sites &bull; Target: 80+ all scores</div>
+    </div>
+
+    <div class="g4">
+      <div class="kpi" id="kpi-access">
+        <div class="kpi-label">Accessibility (WCAG AA)</div>
+        <div class="kpi-value" id="v-access">—</div>
+        <div class="kpi-sub" id="d-access">Target: 80+</div>
+      </div>
+      <div class="kpi" id="kpi-seo">
+        <div class="kpi-label">SEO score</div>
+        <div class="kpi-value" id="v-seo">—</div>
+        <div class="kpi-sub" id="d-seo">Target: 80+</div>
+      </div>
+      <div class="kpi" id="kpi-mobile">
+        <div class="kpi-label">Mobile score</div>
+        <div class="kpi-value" id="v-mobile">—</div>
+        <div class="kpi-sub" id="d-mobile">Mobile UX (target: 70+)</div>
+      </div>
+      <div class="kpi neutral" id="kpi-dci">
+        <div class="kpi-label">DCI overall health</div>
+        <div class="kpi-value" id="v-dci">—</div>
+        <div class="kpi-sub">Siteimprove composite score</div>
+      </div>
+      <div class="kpi" id="kpi-broken">
+        <div class="kpi-label">Broken links</div>
+        <div class="kpi-value" id="v-broken">—</div>
+        <div class="kpi-sub">Across all Cascade pages</div>
+      </div>
+      <div class="kpi" id="kpi-misspell">
+        <div class="kpi-label">Misspellings</div>
+        <div class="kpi-value" id="v-issues">—</div>
+        <div class="kpi-sub">Detected by Siteimprove</div>
+      </div>
+    </div>
+
+    <!-- Single score bars with target marker -->
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-head">
+        <div class="card-title">Scores vs target — gray marker = 80 (good threshold)</div>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:18px;padding-top:24px">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text-secondary)">Accessibility — WCAG 2.1 AA</span>
+            <span class="flag" id="access-flag">—</span>
+          </div>
+          <div class="score-row" style="margin-bottom:0">
+            <div class="score-track" style="width:100%">
+              <div class="score-fill" id="access-bar" style="width:0%"></div>
+              <div class="score-marker" style="left:80%">
+                <div class="score-marker-label">Target 80</div>
+              </div>
+            </div>
+            <div class="score-val" id="access-val">—</div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text-secondary)">SEO</span>
+            <span class="flag" id="seo-flag">—</span>
+          </div>
+          <div class="score-row" style="margin-bottom:0">
+            <div class="score-track" style="width:100%">
+              <div class="score-fill" id="seo-bar" style="width:0%"></div>
+              <div class="score-marker" style="left:80%">
+                <div class="score-marker-label">Target 80</div>
+              </div>
+            </div>
+            <div class="score-val" id="seo-val">—</div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text-secondary)">Content Quality (DCI)</span>
+            <span class="flag neutral" id="qa-flag">—</span>
+          </div>
+          <div class="score-row" style="margin-bottom:0">
+            <div class="score-track" style="width:100%">
+              <div class="score-fill" id="qa-bar" style="width:0%;background:#c87800"></div>
+              <div class="score-marker" style="left:80%">
+                <div class="score-marker-label">Target 80</div>
+              </div>
+            </div>
+            <div class="score-val" id="qa-val">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Site inventory -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Site inventory — Cascade &amp; externally managed</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl" id="invTable" role="table">
+          <caption class="sr-only">Full COAS site inventory</caption>
+          <thead>
+            <tr>
+              <th scope="col">Site</th>
+              <th scope="col">Platform</th>
+              <th scope="col">Monitoring</th>
+              <th scope="col">Category</th>
+            </tr>
+          </thead>
+          <tbody id="invBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       TEAM CAPACITY
+  ============================================= -->
+  <section class="section" id="s-capacity" aria-labelledby="cap-heading">
+    <div class="section-header">
+      <div class="section-label" id="cap-heading">Team Capacity</div>
+      <div class="section-meta">Freshdesk &bull; [your-subdomain].freshdesk.com</div>
+      <select class="section-override" aria-label="Override date range for Capacity section"
+        onchange="overrideSection('capacity', this.value)">
+        <option value="">Period: Global</option>
+        <option value="30">30 days</option>
+        <option value="60">60 days</option>
+        <option value="90">90 days</option>
+        <option value="180">180 days</option>
+      </select>
+    </div>
+
+    <div class="g4">
+      <div class="kpi maroon">
+        <div class="kpi-label">Total requests</div>
+        <div class="kpi-value" id="v-tickets">—</div>
+        <div class="kpi-sub">Dept. requests this period</div>
+      </div>
+      <div class="kpi" id="kpi-resolved">
+        <div class="kpi-label">Resolution rate</div>
+        <div class="kpi-value" id="v-resolved">—</div>
+        <div class="kpi-sub" id="d-resolved">Tickets fully closed</div>
+      </div>
+      <div class="kpi" id="kpi-response">
+        <div class="kpi-label">Avg. first response</div>
+        <div class="kpi-value" id="v-response">—</div>
+        <div class="kpi-sub" id="d-response">Target: under 4h</div>
+      </div>
+      <div class="kpi" id="kpi-csat">
+        <div class="kpi-label">CSAT score</div>
+        <div class="kpi-value" id="v-csat">—</div>
+        <div class="kpi-sub">When surveys available</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <!-- Ticket trend chart -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Ticket volume over time</div>
+          <span class="flag neutral" id="ticketTrendFlag">Loading</span>
+        </div>
+        <div class="card-body" style="padding:12px 16px 16px">
+          <div id="ticketTrendChart" style="width:100%;height:80px"></div>
+          <div id="ticketTrendLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--mono);font-size:9px;color:var(--text-muted)"></div>
+        </div>
+      </div>
+
+      <!-- Department ticket breakdown -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Tickets by department (top 8)</div>
+        </div>
+        <div class="card-body" style="padding:12px 16px">
+          <div class="dept-ticket-bar" id="deptTicketChart"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <!-- Capacity context -->
+      <div class="card">
+        <div class="card-head"><div class="card-title">What these tickets are</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <div class="ctx-box maroon">
+            <div class="ctx-title">What these are</div>
+            <p>Department staff submitting web update requests to MarComm: new profiles, content edits, accessibility training, broken link reports.</p>
+          </div>
+          <div class="ctx-box amber">
+            <div class="ctx-title">What to watch</div>
+            <p>High volume from one department = training opportunity. Slow first-response = capacity issue. Ticket spikes may correlate with semester start/end.</p>
+          </div>
+          <div class="ctx-box green">
+            <div class="ctx-title">The opportunity</div>
+            <p>Training department editors (Cascade + accessibility) is the highest-leverage investment. Each trained editor reduces recurring tickets and frees MarComm for strategic work.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Capacity model -->
+      <div class="card">
+        <div class="card-head"><div class="card-title">Capacity model</div></div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.6">
+            As department editors are trained and routine work is delegated, ticket volume drops — freeing capacity for strategic quality and enrollment work.
+          </p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+                <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">Requests handled</span>
+                <span style="font-family:var(--mono);font-size:10px;color:var(--text-primary)" id="cap-tick-label">—</span>
+              </div>
+              <div style="height:20px;background:var(--score-track);border-radius:2px;overflow:hidden">
+                <div id="cap-tick-bar" style="height:100%;background:var(--maroon);border-radius:2px;width:0%;display:flex;align-items:center;padding-left:8px;font-family:var(--mono);font-size:10px;font-weight:600;color:#fff;transition:width 0.8s ease"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+                <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">Resolution rate</span>
+                <span style="font-family:var(--mono);font-size:10px;color:var(--text-primary)" id="cap-res-label">—</span>
+              </div>
+              <div style="height:20px;background:var(--score-track);border-radius:2px;overflow:hidden">
+                <div id="cap-res-bar" style="height:100%;background:var(--green);border-radius:2px;width:0%;display:flex;align-items:center;padding-left:8px;font-family:var(--mono);font-size:10px;font-weight:600;color:#fff;transition:width 0.8s ease"></div>
+              </div>
+            </div>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:12px">
+            Strategic goal: tickets ↓ &rarr; quality scores ↑ &rarr; enrollment traffic ↑
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       UX INSIGHT (Microsoft Clarity)
+  ============================================= -->
+  <section class="section" id="s-clarity" aria-labelledby="clarity-heading">
+    <div class="section-header">
+      <div class="section-label" id="clarity-heading">UX Insight</div>
+      <div class="section-meta">Microsoft Clarity &bull; YOUR_CLARITY_PROJECT_ID &bull; Cascade sites only &bull; 48h data delay</div>
+    </div>
+    <div id="clarityContent"></div>
+  </section>
+
+  <!-- =============================================
+       RECOMMENDATIONS
+  ============================================= -->
+  <section class="section" id="s-recs" aria-labelledby="recs-heading">
+    <div class="section-header">
+      <div class="section-label" id="recs-heading">Recommendations</div>
+      <div class="section-meta">Generated from current data &bull; Ranked by urgency</div>
+    </div>
+    <div class="rec-list" id="recList" role="list">
+      <div style="font-family:var(--mono);font-size:12px;color:var(--text-muted);padding:14px">
+        Generating recommendations&hellip;
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SITE INVENTORY
+  ============================================= -->
+  <section class="section" id="s-inventory" aria-labelledby="inv-heading">
+    <div class="section-header">
+      <div class="section-label" id="inv-heading">Site Inventory</div>
+      <div class="section-meta">All COAS web properties</div>
+    </div>
+    <div class="g3" style="margin-bottom:14px">
+      <div class="kpi neutral">
+        <div class="kpi-label">Total properties</div>
+        <div class="kpi-value" id="inv-total">—</div>
+        <div class="kpi-sub">All platforms</div>
+      </div>
+      <div class="kpi ok">
+        <div class="kpi-label">Fully monitored</div>
+        <div class="kpi-value" id="inv-monitored">—</div>
+        <div class="kpi-sub">GA4 + Siteimprove</div>
+      </div>
+      <div class="kpi neutral">
+        <div class="kpi-label">Externally managed</div>
+        <div class="kpi-value" id="inv-external">—</div>
+        <div class="kpi-sub">Centers &amp; Institutes</div>
+      </div>
+    </div>
+
+    <!-- Cascade sites table -->
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-head">
+        <div class="card-title">Cascade sites — fully managed</div>
+        <span class="flag ok">19 sites</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl" role="table">
+          <caption class="sr-only">Cascade-managed department sites</caption>
+          <thead><tr><th scope="col">Site</th><th scope="col">URL</th><th scope="col">CMS</th><th scope="col">Monitoring</th></tr></thead>
+          <tbody>
+            <tr><td>[Your College/Unit]</td><td class="mono" style="font-size:11px">[your-domain.edu]/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Anthropology</td><td class="mono" style="font-size:11px">[your-domain.edu]/anthropology/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Atmospheric Sciences</td><td class="mono" style="font-size:11px">[your-domain.edu]/atmos-science/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Biology</td><td class="mono" style="font-size:11px">[your-domain.edu]/biology/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Chemistry</td><td class="mono" style="font-size:11px">[your-domain.edu]/chemistry/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Communication &amp; Journalism</td><td class="mono" style="font-size:11px">[your-domain.edu]/comm-journalism/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Economics</td><td class="mono" style="font-size:11px">[your-domain.edu]/economics/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>English</td><td class="mono" style="font-size:11px">[your-domain.edu]/english/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Geography</td><td class="mono" style="font-size:11px">[your-domain.edu]/geography/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Geology &amp; Geophysics</td><td class="mono" style="font-size:11px">[your-domain.edu]/geology-geophysics/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Global Languages &amp; Cultures</td><td class="mono" style="font-size:11px">[your-domain.edu]/global-lang-cultures/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>History</td><td class="mono" style="font-size:11px">[your-domain.edu]/history/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Mathematics</td><td class="mono" style="font-size:11px">[your-domain.edu]/mathematics/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Oceanography</td><td class="mono" style="font-size:11px">[your-domain.edu]/oceanography/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Philosophy</td><td class="mono" style="font-size:11px">[your-domain.edu]/philosophy/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Physics &amp; Astronomy</td><td class="mono" style="font-size:11px">[your-domain.edu]/physics-astronomy/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Psychological &amp; Brain Sciences</td><td class="mono" style="font-size:11px">[your-domain.edu]/psychological-brain-sciences/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Sociology</td><td class="mono" style="font-size:11px">[your-domain.edu]/sociology/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+            <tr><td>Statistics</td><td class="mono" style="font-size:11px">[your-domain.edu]/statistics/</td><td><span class="pill cascade">Cascade</span></td><td><span class="flag ok">Full</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Centers table -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Centers &amp; Institutes — externally managed</div>
+        <span class="flag warn">Outside direct control</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl" role="table">
+          <caption class="sr-only">Centers and Institutes websites</caption>
+          <thead><tr><th scope="col">Site</th><th scope="col">URL</th><th scope="col">Platform</th><th scope="col">Monitoring</th></tr></thead>
+          <tbody id="centersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<script>
+// =====================================================
+// CONFIG — IMPORTANT: Replace with your deployed Web App URL
+// Deploy > New deployment > Web app in Apps Script
+// =====================================================
+var WEB_APP_URL  = 'YOUR_WEB_APP_URL_HERE';
+var GITHUB_BASE  = 'YOUR_GITHUB_PAGES_URL/';
+var FALLBACK_URL = GITHUB_BASE + 'data.json';
+
+// Get the right GitHub file for a given period
+function getDataUrl(days) {
+  var validPeriods = [30, 60, 90, 180];
+  // Round to nearest available period
+  var best = validPeriods.reduce(function(prev, curr) {
+    return Math.abs(curr - days) < Math.abs(prev - days) ? curr : prev;
+  });
+  return best === 90
+    ? GITHUB_BASE + 'data.json'
+    : GITHUB_BASE + 'data-' + best + '.json';
+}
+
+function hasWebApp() {
+  return WEB_APP_URL &&
+    WEB_APP_URL.length > 20 &&
+    WEB_APP_URL.indexOf('script.google.com') !== -1;
+}
+
+// Thresholds
+var T = {
+  accessGood: 80, accessWarn: 65,
+  seoGood:    80, seoWarn:    65,
+  engGood:    55, engWarn:    40,
+  durGood:    150, durWarn:   90, durBench: 140,
+  brokenWarn: 20,  brokenAlert: 100,
+  respWarn:   4,   respAlert:   8,
+  resWarn:    85
+};
+
+// State
+var state = {
+  data:           null,
+  period:         90,
+  explorerPeriod: 90,
+  chartType:      'bar',
+  activeMetrics:  { sessions: true, newUsers: false, bounceRate: false, avgDuration: false },
+  activeDepts:    {},
+  sectionPeriods: {}
+};
+
+// Dept colours for line chart
+var DEPT_COLORS = [
+  '#d1a0a0','#a85050','#500000','#732f2f','#f5c96a',
+  '#c87800','#4ecb71','#1a5c2e','#6a9ef5','#1a4a99',
+  '#f5836a','#8c1515','#b8a0d8','#6a4a99','#80d4d4',
+  '#2a8a8a','#d4c080','#8a7a20'
+];
+
+// =====================================================
+// INIT & LOAD
+// =====================================================
+document.addEventListener('DOMContentLoaded', function() {
+  // Restore theme
+  var saved = localStorage.getItem('coas-theme') || 'dark';
+  setTheme(saved);
+  loadData(state.period);
+});
+
+function loadData(days, source) {
+  var url = getDataUrl(days || state.period);
+  fetch(url + '?t=' + Date.now())
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) {
+      state.data = data;
+      populate(data);
+      hideLoading();
+    })
+    .catch(function(err) {
+      console.error('Load error:', err);
+      document.getElementById('sotuText').textContent =
+        'Could not load ' + url + ' — run fetchAllData in Apps Script first.';
+      hideLoading();
+    });
+}
+
+// Period-based reload — reads pre-built GitHub JSON files. No CORS issues.
+function reloadWithPeriod(days, source) {
+  showLoading();
+  var url = getDataUrl(days);
+  fetch(url + '?t=' + Date.now())
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      state.data = data;
+      populate(data);
+      hideLoading();
+    })
+    .catch(function(err) {
+      console.error('Period reload error:', err);
+      var notice = document.getElementById('periodNotice');
+      if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'periodNotice';
+        notice.style.cssText = 'font-family:var(--mono);font-size:11px;color:#f5c96a;padding:8px 12px;background:rgba(200,120,0,0.1);border-radius:3px;margin-bottom:12px;';
+        var dash = document.querySelector('.dashboard');
+        if (dash) dash.insertBefore(notice, dash.firstChild);
+      }
+      notice.textContent = 'data-' + days + '.json not found — run fetchAllData in Apps Script to generate all period files. Showing 90-day data.';
+      if (state.data) populate(state.data);
+      hideLoading();
+    });
+}
+
+
+// =====================================================
+// PERIOD CONTROL
+// =====================================================
+function changePeriod(days) {
+  state.period = parseInt(days);
+  showLoading();
+  reloadWithPeriod(state.period, 'all');
+}
+
+function overrideSection(section, days) {
+  if (!days) {
+    // Reset to global — re-render from cached data
+    if (state.data) populate(state.data);
+    return;
+  }
+  var source = section === 'reach' ? 'ga4' : section === 'capacity' ? 'freshdesk' : 'all';
+  reloadWithPeriod(parseInt(days), source);
+}
+
+function showLoading() {
+  var el = document.getElementById('loading');
+  el.style.display = 'flex';
+  el.classList.remove('hidden');
+}
+
+function hideLoading() {
+  var el = document.getElementById('loading');
+  if (!el) return;
+  el.classList.add('hidden');
+  setTimeout(function() { el.style.display = 'none'; }, 400);
+}
+
+// =====================================================
+// THEME
+// =====================================================
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('coas-theme', theme);
+  var btn = document.getElementById('themeBtn');
+  btn.textContent = theme === 'dark' ? '☀ Light' : '☾ Dark';
+}
+
+// =====================================================
+// CHART TYPE SWITCH
+// =====================================================
+function switchChartType(type, btn) {
+  state.chartType = type;
+  document.querySelectorAll('.chart-tab').forEach(function(t) {
+    t.classList.remove('active');
+    t.setAttribute('aria-selected', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
+
+  // Show/hide line-only controls
+  var wrap   = document.getElementById('deptTogglesWrap');
+  var epSel  = document.getElementById('explorerPeriod');
+  if (wrap)  wrap.style.display  = type === 'line' ? 'block' : 'none';
+  if (epSel) epSel.style.display = type === 'line' ? 'block' : 'none';
+
+  if (state.data && state.data.ga4) buildTrafficChart(state.data.ga4);
+}
+
+// Radio-style: clicking a metric always activates it and deactivates all others
+function selectMetric(metric, btn) {
+  // Update state — only this metric is active
+  Object.keys(state.activeMetrics).forEach(function(m) {
+    state.activeMetrics[m] = (m === metric);
+  });
+
+  // Update all button visual states
+  document.querySelectorAll('#metricToggles .metric-toggle').forEach(function(b) {
+    b.classList.remove('active');
+    b.setAttribute('aria-checked', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-checked', 'true');
+
+  if (state.data && state.data.ga4) buildTrafficChart(state.data.ga4);
+}
+
+// Keep old toggleMetric as alias so nothing breaks
+function toggleMetric(metric, btn) { selectMetric(metric, btn); }
+
+// Explorer-local period change — fetches fresh trend data for this period
+function changeExplorerPeriod(days) {
+  state.explorerPeriod = parseInt(days);
+  if (!state.data || !state.data.ga4) return;
+
+  var chartEl = document.getElementById('trafficChart');
+  if (chartEl) chartEl.innerHTML = '<div style="padding:20px;font-family:var(--mono);font-size:12px;color:var(--text-muted)">Loading ' + days + '-day data…</div>';
+
+  var url = getDataUrl(days);
+  fetch(url + '?t=' + Date.now())
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      if (data && data.ga4) {
+        state.data.ga4.deptTrend     = data.ga4.deptTrend     || state.data.ga4.deptTrend;
+        state.data.ga4.deptBreakdown = data.ga4.deptBreakdown  || state.data.ga4.deptBreakdown;
+        state.data.ga4.monthlyTrend  = data.ga4.monthlyTrend  || state.data.ga4.monthlyTrend;
+        if (data.ga4.deptTrend && data.ga4.deptTrend.departments) {
+          var newDepts = Object.keys(data.ga4.deptTrend.departments);
+          newDepts.forEach(function(d) {
+            if (state.activeDepts[d] === undefined) state.activeDepts[d] = true;
+          });
+          buildDeptToggles(newDepts);
+        }
+        buildTrafficChart(state.data.ga4);
+      }
+    })
+    .catch(function(err) {
+      console.error('Explorer period error:', err);
+      if (state.data && state.data.ga4) buildTrafficChart(state.data.ga4);
+    });
+}
+
+// =====================================================
+// MAIN POPULATE
+// =====================================================
+function populate(data) {
+  updateTimestamp(data.lastUpdated);
+
+  var ga4 = data.ga4         || {};
+  var si  = data.siteimprove || {};
+  var fd  = data.freshdesk   || {};
+  var cl  = data.clarity     || {};
+  var inv = data.centersInventory || [];
+
+  if (data.reportPeriod) {
+    var lbl = (data.reportPeriod.label || '').replace(/\?/g, '\u2013');
+    set('sotuPeriod', lbl);
+    set('signalDate', lbl);
+  }
+
+  populateReach(ga4);
+  populateQuality(si, inv);
+  populateCapacity(fd);
+  populateClarity(cl);
+  populateInventory(inv);
+  generateSotu(ga4, si, fd);
+  generateSignalReport(ga4, si, fd, cl);
+  generateRecs(ga4, si, fd);
+  updateHealthBadge(si, fd);
+  updateStrategicPriorities(ga4, si, fd);
+}
+
+function updateTimestamp(iso) {
+  var el = document.getElementById('lastUpdated');
+  if (!el) return;
+  if (!iso || iso === 'pending') { el.textContent = 'Pending first run'; return; }
+  var d    = new Date(iso);
+  var opts = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  el.textContent = 'Updated ' + d.toLocaleString('en-US', opts) + ' CT';
+}
+
+// =====================================================
+// REACH / GA4
+// =====================================================
+function populateReach(g) {
+  if (!g || !g.sessions) return;
+
+  set('v-sessions', g.sessions.value || '\u2014');
+  set('v-newusers', g.newUsers    ? g.newUsers.value    : '\u2014');
+  set('v-engage',   g.engagementRate ? g.engagementRate.value : '\u2014');
+  set('v-duration', g.avgDuration ? g.avgDuration.value : '\u2014');
+
+  var engRaw = g.engagementRate ? (g.engagementRate.raw || 0) : 0;
+  var durRaw = g.avgDuration    ? (g.avgDuration.raw    || 0) : 0;
+
+  var kpiEng = document.getElementById('kpi-engage');
+  var kpiDur = document.getElementById('kpi-duration');
+  var kpiNew = document.getElementById('kpi-newusers');
+  if (kpiNew) kpiNew.className = 'kpi maroon';
+
+  if (engRaw >= T.engGood) {
+    if (kpiEng) kpiEng.className = 'kpi ok';
+    set('d-engage', '\u2191 ' + engRaw + '% \u2014 above avg (50%)');
+    setClass('d-engage', 'kpi-sub delta-up');
+  } else if (engRaw >= T.engWarn) {
+    if (kpiEng) kpiEng.className = 'kpi warn';
+    set('d-engage', 'Near avg \u2014 room to improve');
+  } else if (engRaw > 0) {
+    if (kpiEng) kpiEng.className = 'kpi alert';
+    set('d-engage', '\u2193 Below avg \u2014 investigate content');
+    setClass('d-engage', 'kpi-sub delta-bad');
+  }
+
+  if (durRaw >= T.durGood) {
+    if (kpiDur) kpiDur.className = 'kpi ok';
+    var diff = durRaw - T.durBench;
+    set('d-duration', '\u2191 +' + fmtDur(diff) + ' vs higher ed avg');
+    setClass('d-duration', 'kpi-sub delta-up');
+  } else if (durRaw >= T.durWarn) {
+    if (kpiDur) kpiDur.className = 'kpi warn';
+    set('d-duration', 'Below higher ed avg (2:20)');
+  } else if (durRaw > 0) {
+    if (kpiDur) kpiDur.className = 'kpi alert';
+    set('d-duration', '\u2193 Well below avg \u2014 investigate');
+    setClass('d-duration', 'kpi-sub delta-bad');
+  }
+
+  if (g.monthlyTrend) buildTrendChart(g.monthlyTrend);
+  if (g.topPages)     buildTopPages(g.topPages);
+  buildTrafficChart(g);
+
+  if (g.deptTrend && g.deptTrend.departments) {
+    buildDeptToggles(Object.keys(g.deptTrend.departments));
+  }
+}
+
+function buildTrendChart(trend) {
+  var el = document.getElementById('trendChart');
+  if (!trend || !trend.buckets || !trend.buckets.length) return;
+  var vals   = trend.buckets.map(function(b) { return b.sessions; });
+  var labels = trend.labels || [];
+  var first  = vals[0] || 0;
+  var last   = vals[vals.length - 1] || 0;
+  var tf     = document.getElementById('trendFlag');
+  if (tf) {
+    if (last > first * 1.05)      { tf.textContent = 'Growing \u2191'; tf.className = 'flag ok'; }
+    else if (last < first * 0.95) { tf.textContent = 'Declining \u2193'; tf.className = 'flag alert'; }
+    else                          { tf.textContent = 'Stable \u2014'; tf.className = 'flag neutral'; }
+  }
+  el.innerHTML = buildHoverSVGLine(vals, labels, 600, 70, '#500000', 'sessions');
+  var labEl = document.getElementById('trendLabels');
+  if (labEl) labEl.innerHTML = '';
+}
+
+function buildTopPages(pages) {
+  var el = document.getElementById('topPages');
+  if (!pages || !pages.length) {
+    el.innerHTML = '<div style="padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--text-muted)">No data</div>';
+    return;
+  }
+  var max = pages[0].views || 1;
+  el.innerHTML = pages.map(function(p) {
+    var pct = Math.round((p.views / max) * 100);
+    var v   = p.views >= 1000 ? (p.views / 1000).toFixed(1) + 'k' : String(p.views);
+    var lbl = p.path.length > 26 ? p.path.substring(0, 25) + '\u2026' : p.path;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 16px">' +
+      '<div style="font-family:var(--mono);font-size:11px;color:var(--text-secondary);width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + p.path + '">' + lbl + '</div>' +
+      '<div class="mbar" style="flex:1">' +
+        '<div class="mbar-track"><div class="mbar-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="mbar-val">' + v + '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function buildTrafficChart(g) {
+  var el = document.getElementById('trafficChart');
+  if (!el) return;
+  if (state.chartType === 'bar') buildBarChart(el, g);
+  else buildLineChart(el, g);
+}
+
+function buildBarChart(el, g) {
+  var depts = g.deptBreakdown || [];
+  if (!depts.length) {
+    el.innerHTML = '<div style="padding:20px;font-family:var(--mono);font-size:12px;color:var(--text-muted)">No department data available</div>';
+    return;
+  }
+  var metric = Object.keys(state.activeMetrics).find(function(m) { return state.activeMetrics[m]; }) || 'sessions';
+  var vals   = depts.map(function(d) {
+    if (metric === 'sessions')    return d.sessions    || 0;
+    if (metric === 'newUsers')    return d.newUsers    || 0;
+    if (metric === 'bounceRate')  return d.bounceRate  || 0;
+    if (metric === 'avgDuration') return d.avgDuration || 0;
+    return d.sessions || 0;
+  });
+  var total  = vals.reduce(function(a, b) { return a + b; }, 0) || 1;
+  var max    = Math.max.apply(null, vals) || 1;
+  var metricLabels = { sessions: 'Sessions', newUsers: 'New Users', bounceRate: 'Bounce Rate', avgDuration: 'Time on Page' };
+
+  el.innerHTML =
+    '<table class="tbl" role="table">' +
+    '<caption class="sr-only">Department ' + (metricLabels[metric]||metric) + ' breakdown</caption>' +
+    '<thead><tr>' +
+      '<th scope="col" style="width:28px">#</th>' +
+      '<th scope="col">Department</th>' +
+      '<th scope="col" style="text-align:right;width:52px">Share</th>' +
+      '<th scope="col" style="min-width:120px">' + (metricLabels[metric]||metric) + '</th>' +
+      '<th scope="col" style="text-align:right;width:70px">Value</th>' +
+      '<th scope="col" style="width:80px">Status</th>' +
+    '</tr></thead><tbody>' +
+    depts.map(function(d, i) {
+      var v       = vals[i];
+      var pct     = Math.round((v / max) * 100);
+      var share   = metric === 'bounceRate' ? '\u2014' : Math.round((v / total) * 100) + '%';
+      var display = metric === 'avgDuration' ? fmtDur(v) : metric === 'bounceRate' ? v + '%' : (v >= 1000 ? (v/1000).toFixed(1)+'k' : String(v));
+      var statusFlag = i < 3 ? '<span class="flag ok">Leading</span>' : i >= depts.length - 3 ? '<span class="flag warn">Low</span>' : '<span class="flag neutral">Normal</span>';
+      return '<tr>' +
+        '<td class="rank">' + (i+1) + '</td>' +
+        '<td style="font-size:13px;color:var(--text-primary);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(d.name)+'">' + esc(d.name) + '</td>' +
+        '<td style="font-family:var(--mono);font-size:12px;text-align:right;color:var(--text-muted)">' + share + '</td>' +
+        '<td><div class="mbar"><div class="mbar-track"><div class="mbar-fill" style="width:' + pct + '%"></div></div></div></td>' +
+        '<td class="num" style="font-family:var(--mono);font-size:13px">' + display + '</td>' +
+        '<td>' + statusFlag + '</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table>';
+}
+
+
+function buildLineChart(el, g) {
+  var trendData = g.deptTrend;
+  if (!trendData || !trendData.labels || !trendData.labels.length) {
+    el.innerHTML = '<div style="padding:20px;font-family:var(--mono);font-size:12px;color:var(--text-muted)">No trend data available. Connect the Web App to enable per-period department trends.</div>';
+    return;
+  }
+
+  var labels   = trendData.labels;
+  var allDepts = Object.keys(trendData.departments);
+  var metric   = Object.keys(state.activeMetrics).find(function(m) { return state.activeMetrics[m]; }) || 'sessions';
+  var metricLabels = {
+    sessions:    'Sessions',
+    newUsers:    'New Users',
+    bounceRate:  'Bounce Rate (%)',
+    avgDuration: 'Avg. Time on Page'
+  };
+
+  // Active depts — use current toggle state, don't reset it
+  // Only initialize if completely empty (first time)
+  var knownDepts = Object.keys(state.activeDepts);
+  var newDepts   = allDepts.filter(function(d) { return knownDepts.indexOf(d) === -1; });
+  if (newDepts.length > 0 || knownDepts.length === 0) {
+    // First load or new depts added — initialize new ones, default first 5
+    allDepts.forEach(function(d, i) {
+      if (state.activeDepts[d] === undefined) state.activeDepts[d] = i < 5;
+    });
+    buildDeptToggles(allDepts); // only rebuild toggles when dept list changes
+  }
+
+  var activeDepts = allDepts.filter(function(d) { return state.activeDepts[d] === true; });
+  if (activeDepts.length === 0) {
+    activeDepts = allDepts.slice(0, 5);
+    activeDepts.forEach(function(d) { state.activeDepts[d] = true; });
+    buildDeptToggles(allDepts);
+  }
+
+  // Build per-dept time series for chosen metric
+  var breakdown = g.deptBreakdown || [];
+  var breakdownMap = {};
+  breakdown.forEach(function(d) { breakdownMap[d.name] = d; });
+
+  var isAverage = (metric === 'bounceRate' || metric === 'avgDuration');
+  var n = labels.length;
+
+  // Build series for ALL depts (not just active ones)
+  // This ensures tooltip always has data even for depts toggled on after render
+  var deptSeries = {};
+  allDepts.forEach(function(d) {
+    var sessionVals = trendData.departments[d] || new Array(n).fill(0);
+    var bd = breakdownMap[d] || {};
+    if (metric === 'sessions') {
+      deptSeries[d] = sessionVals;
+    } else if (metric === 'newUsers') {
+      var nuRatio = (bd.newUsers || 0) / (bd.sessions || 1);
+      deptSeries[d] = sessionVals.map(function(s) { return Math.round(s * nuRatio); });
+    } else if (metric === 'bounceRate') {
+      deptSeries[d] = new Array(n).fill(bd.bounceRate || 0);
+    } else if (metric === 'avgDuration') {
+      deptSeries[d] = new Array(n).fill(bd.avgDuration || 0);
+    }
+  });
+
+  // Chart dims
+  var W = 640, H = 220, PADL = 40, PADR = 12, PADT = 28, PADB = 28;
+  var plotW = W - PADL - PADR;
+  var plotH = H - PADT - PADB;
+
+  var allVals = [];
+  Object.keys(deptSeries).forEach(function(d) {
+    deptSeries[d].forEach(function(v) { if (v > 0) allVals.push(v); });
+  });
+  var globalMax = Math.max.apply(null, allVals) || 1;
+
+  // Y-axis gridlines
+  var gridLines = [0, 0.25, 0.5, 0.75, 1].map(function(pct) {
+    var y = PADT + (1 - pct) * plotH;
+    var v = globalMax * pct;
+    var lbl = metric === 'avgDuration' ? fmtDur(Math.round(v))
+            : metric === 'bounceRate'  ? Math.round(v) + '%'
+            : v >= 1000 ? (v/1000).toFixed(1)+'k' : String(Math.round(v));
+    return '<line x1="'+PADL+'" y1="'+y+'" x2="'+(W-PADR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="3,3"/>' +
+      '<text x="'+(PADL-4)+'" y="'+(y+3)+'" text-anchor="end" font-size="8" fill="var(--text-muted)" font-family="IBM Plex Mono,monospace">'+lbl+'</text>';
+  }).join('');
+
+  // X-axis labels
+  var xLabels = labels.map(function(l, i) {
+    var x = PADL + (n <= 1 ? plotW/2 : i/(n-1)*plotW);
+    return '<text x="'+x+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" fill="var(--text-muted)" font-family="IBM Plex Mono,monospace">'+esc(l)+'</text>';
+  }).join('');
+
+  // Invisible column hit zones — one per bucket, full chart height
+  // First and last columns extend to chart edges for easier hover
+  var hitZones = labels.map(function(l, i) {
+    var x   = PADL + (n <= 1 ? plotW/2 : i/(n-1)*plotW);
+    var hw  = n > 1 ? plotW/(n-1)/2 : plotW/2;
+    var x1  = i === 0     ? PADL         : x - hw;
+    var x2  = i === n - 1 ? PADL + plotW : x + hw;
+    return '<rect class="hit-zone" data-index="'+i+'" data-label="'+esc(l)+'" ' +
+      'x="'+x1+'" y="'+PADT+'" width="'+(x2-x1)+'" height="'+plotH+'" ' +
+      'fill="transparent" style="cursor:crosshair"/>';
+  }).join('');
+
+  // Crosshair
+  var crosshair = '<line id="lcCrosshair" x1="0" y1="'+PADT+'" x2="0" y2="'+(PADT+plotH)+'" ' +
+    'stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>';
+
+  // Metric label
+  var mLabel = '<text x="'+PADL+'" y="18" font-size="9" font-weight="600" fill="var(--maroon-light)" font-family="IBM Plex Mono,monospace">' +
+    (metricLabels[metric]||metric).toUpperCase() +
+    (isAverage ? ' \u2014 PERIOD AVGS' : '') + '</text>';
+
+  // Series: area + line + dots (no individual hover listeners — column-based instead)
+  var seriesSVG = activeDepts.map(function(d) {
+    var vals  = deptSeries[d] || [];
+    var color = DEPT_COLORS[allDepts.indexOf(d) % DEPT_COLORS.length];
+    if (!vals.length) return '';
+
+    var pts = vals.map(function(v, i) {
+      return {
+        x: PADL + (n <= 1 ? plotW/2 : i/(n-1)*plotW),
+        y: PADT + (1 - (globalMax > 0 ? Math.min(v,globalMax)/globalMax : 0)) * plotH,
+        v: v
+      };
+    });
+
+    var areaD = 'M'+pts[0].x+','+(PADT+plotH)+
+      ' L'+pts[0].x+','+pts[0].y+
+      pts.slice(1).map(function(p){return ' L'+p.x+','+p.y;}).join('')+
+      ' L'+pts[pts.length-1].x+','+(PADT+plotH)+' Z';
+    var linePts = pts.map(function(p){return p.x+','+p.y;}).join(' ');
+    var dots    = pts.map(function(p, pi) {
+      return '<circle class="series-dot" data-dept="'+esc(d)+'" data-idx="'+pi+'" cx="'+p.x+'" cy="'+p.y+'" r="3" fill="'+color+'" stroke="var(--bg-card)" stroke-width="1.5" pointer-events="none"/>';
+    }).join('');
+
+    var uid = 'lc_'+d.replace(/[^a-z0-9]/gi,'_');
+    return '<defs><linearGradient id="'+uid+'" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="'+color+'" stop-opacity="0.15"/>' +
+      '<stop offset="100%" stop-color="'+color+'" stop-opacity="0.01"/>' +
+      '</linearGradient></defs>' +
+      '<path d="'+areaD+'" fill="url(#'+uid+')"/>' +
+      '<polyline points="'+linePts+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+      dots;
+  }).join('');
+
+  var svgId = 'lcSVG_' + Date.now();
+  var tipId = 'lcTip_' + Date.now();
+
+  el.innerHTML =
+    '<div style="position:relative">' +
+    '<svg id="'+svgId+'" width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="overflow:visible;display:block">' +
+      gridLines + seriesSVG + xLabels + mLabel + crosshair + hitZones +
+    '</svg>' +
+    '<div id="'+tipId+'" style="position:absolute;pointer-events:none;opacity:0;transition:opacity 0.1s;' +
+      'background:var(--bg-card);border:1px solid var(--border);border-radius:4px;' +
+      'padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--text-primary);' +
+      'box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:20;min-width:200px;max-width:280px;' +
+      'max-height:320px;overflow-y:auto;' +
+      'transform:translateX(-50%) translateY(calc(-100% - 10px))"></div>' +
+    '</div>';
+
+  // Column-based hover: show ALL active depts for hovered time bucket
+  setTimeout(function() {
+    var svg = document.getElementById(svgId);
+    var tip = document.getElementById(tipId);
+    var ch  = document.getElementById('lcCrosshair');
+    if (!svg || !tip) return;
+
+    svg.querySelectorAll('.hit-zone').forEach(function(rect) {
+      rect.addEventListener('mouseenter', function() {
+        var idx   = parseInt(this.getAttribute('data-index'));
+        var label = this.getAttribute('data-label');
+        var x     = PADL + (n <= 1 ? plotW/2 : idx/(n-1)*plotW);
+
+        if (ch) { ch.setAttribute('x1', x); ch.setAttribute('x2', x); ch.setAttribute('opacity', '0.5'); }
+
+        // Tooltip: show ALL currently active depts, sorted by value descending
+        // Read state.activeDepts at hover time so newly toggled depts appear
+        var currentActive = allDepts.filter(function(d) { return state.activeDepts[d] === true; });
+        var deptRows = currentActive.map(function(d) {
+          var color = DEPT_COLORS[allDepts.indexOf(d) % DEPT_COLORS.length];
+          var v     = (deptSeries[d] || [])[idx] || 0;
+          var vFmt  = metric === 'avgDuration' ? fmtDur(Math.round(v))
+                    : metric === 'bounceRate'  ? Math.round(v) + '%'
+                    : v >= 1000 ? (v/1000).toFixed(1)+'k' : String(Math.round(v));
+          return { d: d, color: color, vFmt: vFmt, v: v };
+        }).sort(function(a, b) { return b.v - a.v; });
+
+        var rows = deptRows.map(function(row) {
+          return '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;min-width:0">' +
+            '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+row.color+';flex-shrink:0"></span>' +
+            '<span style="color:var(--text-secondary);flex:1;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.d)+'</span>' +
+            '<span style="font-weight:600;margin-left:8px;white-space:nowrap;flex-shrink:0">'+row.vFmt+'</span>' +
+            '</div>';
+        }).join('');
+
+        tip.innerHTML =
+          '<div style="font-weight:600;color:var(--text-primary);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:2px">'+esc(label)+'</div>' +
+          rows;
+
+        // Position above the hovered column
+        tip.style.left    = (x / W * 100) + '%';
+        tip.style.top     = (PADT / H * 100) + '%';
+        tip.style.opacity = '1';
+
+        // Grow dots at this index using data-idx attribute (reliable regardless of dept count)
+        svg.querySelectorAll('.series-dot').forEach(function(dot) {
+          dot.setAttribute('r', dot.getAttribute('data-idx') === String(idx) ? '5' : '3');
+        });
+      });
+
+      rect.addEventListener('mouseleave', function() {
+        tip.style.opacity = '0';
+        if (ch) ch.setAttribute('opacity', '0');
+        svg.querySelectorAll('.series-dot').forEach(function(dot) { dot.setAttribute('r', '3'); });
+      });
+    });
+  }, 50);
+
+  // Legend
+  var legend = activeDepts.map(function(d) {
+    var color = DEPT_COLORS[allDepts.indexOf(d) % DEPT_COLORS.length];
+    return '<span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-secondary)">' +
+      '<span style="display:inline-block;width:14px;height:2px;background:'+color+';border-radius:1px;flex-shrink:0"></span>' +
+      esc(d)+'</span>';
+  }).join('');
+  el.insertAdjacentHTML('beforeend',
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding:0 4px">'+legend+'</div>' +
+    (isAverage ? '<div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-top:6px;padding:0 4px">* Bounce rate and time on page show period averages. Per-bucket data requires additional API calls.</div>' : '')
+  );
+}
+
+function buildDeptToggles(depts) {
+  var el = document.getElementById('deptToggles');
+  if (!el) return;
+
+  // Initialize defaults — first 5 active
+  depts.forEach(function(d, i) {
+    if (state.activeDepts[d] === undefined) {
+      state.activeDepts[d] = i < 5;
+    }
+  });
+
+  // Each button stores its color as data attribute so toggleDept doesn't need a closure
+  el.innerHTML = depts.map(function(d, i) {
+    var color  = DEPT_COLORS[i % DEPT_COLORS.length];
+    var active = state.activeDepts[d] === true;
+    var activeStyle = active
+      ? 'background:' + color + ';border-color:' + color + ';color:#fff'
+      : '';
+    return '<button class="dept-toggle' + (active ? ' active' : '') + '" ' +
+      'data-dept="' + esc(d) + '" ' +
+      'data-color="' + color + '" ' +
+      'style="' + activeStyle + '" ' +
+      'onclick="toggleDept(this)" ' +
+      'aria-pressed="' + active + '">' +
+      esc(d) + '</button>';
+  }).join('');
+}
+
+function toggleDept(btn) {
+  var name   = btn.getAttribute('data-dept');
+  var color  = btn.getAttribute('data-color');
+  var active = !(state.activeDepts[name] === true);
+  state.activeDepts[name] = active;
+  btn.classList.toggle('active', active);
+  btn.setAttribute('aria-pressed', String(active));
+  btn.style.background  = active ? color : '';
+  btn.style.borderColor = active ? color : '';
+  btn.style.color       = active ? '#fff' : '';
+  if (state.data && state.data.ga4) buildTrafficChart(state.data.ga4);
+}
+
+function selectAllDepts(active) {
+  if (!state.data || !state.data.ga4 || !state.data.ga4.deptTrend) return;
+  var depts = Object.keys(state.data.ga4.deptTrend.departments);
+  depts.forEach(function(d) { state.activeDepts[d] = active; });
+  buildDeptToggles(depts);
+  buildTrafficChart(state.data.ga4);
+}
+
+// =====================================================
+// QUALITY
+// =====================================================
+function populateQuality(si, inv) {
+  if (!si) return;
+
+  var aRaw = si.accessibilityScore ? (si.accessibilityScore.raw || 0) : 0;
+  var sRaw = si.seoScore           ? (si.seoScore.raw           || 0) : 0;
+  var qRaw = si.qaScore            ? (si.qaScore.raw            || 0) : 0;
+  var dRaw = si.dciTotal           ? (si.dciTotal.raw           || 0) : 0;
+  var mRaw = si.mobileScore        ? (si.mobileScore.raw        || 0) : 0;
+  var bRaw = si.brokenLinks        ? (si.brokenLinks.raw        || 0) : 0;
+  var iRaw = si.qualityIssues      ? (si.qualityIssues.raw      || 0) : 0;
+
+  set('v-access', aRaw > 0 ? String(aRaw) : '—');
+  set('v-seo',    sRaw > 0 ? String(sRaw) : '—');
+  set('v-mobile', mRaw > 0 ? String(mRaw) : '—');
+  set('v-dci',    dRaw > 0 ? String(dRaw) : '—');
+  set('v-broken', String(bRaw));
+  set('v-issues', String(iRaw));
+
+  // KPI border colors
+  setKpiStatus('kpi-access',  aRaw, T.accessGood, T.accessWarn);
+  setKpiStatus('kpi-seo',     sRaw, T.seoGood,    T.seoWarn);
+  setKpiStatus('kpi-mobile',  mRaw, 70, 50);
+  setKpiStatus('kpi-broken',  bRaw < T.brokenWarn ? 100 : 0, 50, 30);
+  setKpiStatus('kpi-misspell', 100, 100, 50);
+
+  var kpiM = document.getElementById('kpi-misspell');
+  if (kpiM) kpiM.className = 'kpi maroon';
+
+  set('d-mobile', mRaw >= 70 ? '\u2713 Good mobile experience' :
+                  mRaw >= 50 ? '\u26A0 Mobile UX needs attention' :
+                  mRaw > 0   ? '\u2715 Poor mobile — impacts enrollment' : 'Target: 70+');
+
+  setTimeout(function() {
+    animateBar('access-bar', aRaw, scoreColor(aRaw, T.accessGood, T.accessWarn));
+    animateBar('seo-bar',    sRaw, scoreColor(sRaw, T.seoGood,    T.seoWarn));
+    animateBar('qa-bar',     qRaw, qRaw >= 80 ? '#1a5c2e' : qRaw >= 65 ? '#c87800' : '#8c1515');
+    set('access-val', aRaw > 0 ? String(aRaw) : '—');
+    set('seo-val',    sRaw > 0 ? String(sRaw) : '—');
+    set('qa-val',     qRaw > 0 ? String(qRaw) : '—');
+  }, 400);
+
+  setFlag('access-flag', aRaw, T.accessGood, T.accessWarn);
+  setFlag('seo-flag',    sRaw, T.seoGood,    T.seoWarn);
+  setFlag('qa-flag',     qRaw, 80, 65);
+
+  set('d-access', aRaw >= T.accessGood ? '✓ Meets WCAG 2.1 AA' : aRaw >= T.accessWarn ? '⚠ Below target' : '✕ Needs remediation');
+  set('d-seo',    sRaw >= T.seoGood    ? '✓ Above good threshold' : '⚠ Below target');
+
+  // Mobile score — from DCI data (seoScore includes mobile sub-score)
+  var mobileScore = si.mobileScore ? si.mobileScore.raw : 0;
+  if (mobileScore > 0) {
+    var kpiMob = document.getElementById('kpi-mobile');
+    if (kpiMob) {
+      kpiMob.className = mobileScore >= 70 ? 'kpi ok' : mobileScore >= 50 ? 'kpi warn' : 'kpi alert';
+      set('v-mobile', String(mobileScore));
+      set('d-mobile', mobileScore >= 70 ? '✓ Good mobile experience' : '⚠ Mobile UX needs attention');
+    }
+  }
+
+  var avg = (aRaw > 0 && sRaw > 0) ? Math.round((aRaw + sRaw) / 2) : (aRaw || sRaw);
+  set('sp-quality', avg > 0 ? avg + ' avg' : '—');
+
+  buildInventoryTable(inv);
+}
+
+function buildInventoryTable(inv) {
+  var el = document.getElementById('invBody');
+  if (!inv || !inv.length) return;
+
+  var sorted = inv.slice().sort(function(a, b) {
+    if (a.monitored && !b.monitored) return -1;
+    if (!a.monitored && b.monitored) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  el.innerHTML = sorted.map(function(s) {
+    var pc  = s.platform.toLowerCase().replace(/[^a-z]/g,'') || 'unknown';
+    var mon = s.monitored ? '<span class="flag ok">Monitored</span>' : '<span class="flag neutral">External</span>';
+    return '<tr><td style="font-size:13px"><a href="'+s.url+'" target="_blank" rel="noopener" style="color:var(--maroon-light);text-decoration:none">'+esc(s.name)+'</a></td>' +
+      '<td><span class="pill '+pc+'">'+esc(s.platform)+'</span></td>' +
+      '<td>'+mon+'</td>' +
+      '<td style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">'+(s.monitored?'Siteimprove':'Ext.')+'</td></tr>';
+  }).join('');
+}
+
+// =====================================================
+// CAPACITY
+// =====================================================
+function populateCapacity(fd) {
+  if (!fd) return;
+
+  var tickRaw = fd.ticketVolume    ? (fd.ticketVolume.raw    || 0) : 0;
+  var resRaw  = fd.resolutionRate  ? parseFloat(fd.resolutionRate.value)  || 0 : 0;
+  var respRaw = fd.avgResponseTime ? parseFloat(fd.avgResponseTime.value) || 0 : 0;
+
+  set('v-tickets',  fd.ticketVolume    ? fd.ticketVolume.value    : '—');
+  set('v-resolved', fd.resolutionRate  ? fd.resolutionRate.value  : '—');
+  set('v-response', fd.avgResponseTime ? fd.avgResponseTime.value : '—');
+  set('v-csat',     fd.csatScore       ? fd.csatScore.value       : 'N/A');
+
+  // Fix CSAT KPI border
+  var kpiC = document.getElementById('kpi-csat');
+  if (kpiC) kpiC.className = 'kpi maroon';
+
+  setKpiStatus('kpi-resolved', resRaw, T.resWarn + 10, T.resWarn);
+  set('d-resolved', resRaw >= 95 ? '\u2713 Excellent' : resRaw >= T.resWarn ? 'Above 85% target' : '\u26A0 Below target');
+
+  var kpiR = document.getElementById('kpi-response');
+  if (respRaw > 0 && respRaw <= T.respWarn) {
+    if (kpiR) kpiR.className = 'kpi ok';
+    set('d-response', '\u2713 Under 4h target');
+  } else if (respRaw > T.respWarn && respRaw <= T.respAlert) {
+    if (kpiR) kpiR.className = 'kpi warn';
+    set('d-response', '\u26A0 Approaching 8h limit');
+  } else if (respRaw > T.respAlert) {
+    if (kpiR) kpiR.className = 'kpi alert';
+    set('d-response', '\u2715 Exceeds 8h threshold');
+  }
+
+  // Capacity bars
+  setTimeout(function() {
+    var tp = Math.min(100, Math.round((tickRaw/150)*100));
+    var rp = Math.min(100, resRaw);
+    var tb = document.getElementById('cap-tick-bar');
+    var rb = document.getElementById('cap-res-bar');
+    if (tb) { tb.style.width = tp + '%'; tb.textContent = tickRaw + ' requests'; }
+    if (rb) { rb.style.width = rp + '%'; rb.textContent = resRaw + '%'; }
+    set('cap-tick-label', tickRaw + ' requests');
+    set('cap-res-label',  resRaw + '% resolved');
+  }, 500);
+
+  set('sp-capacity', fd.ticketVolume ? fd.ticketVolume.value : '—');
+
+  // Ticket trend chart
+  if (fd.ticketTrend && fd.ticketTrend.length) buildTicketTrend(fd.ticketTrend);
+
+  // Dept ticket chart
+  if (fd.deptBreakdown && fd.deptBreakdown.length) buildDeptTicketChart(fd.deptBreakdown);
+}
+
+function buildTicketTrend(trend) {
+  var vals   = trend.map(function(b) { return b.count; });
+  var labels = trend.map(function(b) { return b.label; });
+
+  var el = document.getElementById('ticketTrendChart');
+  if (el) el.innerHTML = buildHoverSVGLine(vals, labels, 600, 70, '#500000', 'tickets');
+
+  var lel = document.getElementById('ticketTrendLabels');
+  if (lel) lel.innerHTML = ''; // labels now inside SVG
+
+  var first = vals[0] || 0;
+  var last  = vals[vals.length - 1] || 0;
+  var tf    = document.getElementById('ticketTrendFlag');
+  if (tf) {
+    if (last > first * 1.1)      { tf.textContent = 'Rising ↑'; tf.className = 'flag alert'; }
+    else if (last < first * 0.9) { tf.textContent = 'Declining ↓'; tf.className = 'flag ok'; }
+    else                         { tf.textContent = 'Stable —'; tf.className = 'flag neutral'; }
+  }
+}
+
+function buildDeptTicketChart(depts) {
+  var el = document.getElementById('deptTicketChart');
+  if (!el || !depts.length) return;
+  var max = depts[0].count || 1;
+  el.innerHTML = depts.slice(0, 8).map(function(d) {
+    var pct = Math.round((d.count / max) * 100);
+    return '<div class="dtb-row">' +
+      '<div class="dtb-label" title="'+esc(d.name)+'">'+esc(d.name)+'</div>' +
+      '<div class="dtb-track"><div class="dtb-fill" style="width:'+pct+'%">'+d.count+'</div></div>' +
+      '<div class="dtb-val">'+d.count+'</div>' +
+      '</div>';
+  }).join('');
+}
+
+// =====================================================
+// CLARITY
+// =====================================================
+function populateClarity(cl) {
+  var el = document.getElementById('clarityContent');
+  if (!el) return;
+
+  if (!cl || !cl.hasData || cl.status === 'pending') {
+    var reason = cl ? (cl.reason || 'Connecting to Microsoft Clarity\u2026') : 'No Clarity data in response.';
+    el.innerHTML =
+      '<div class="card">' +
+        '<div class="card-head"><div class="card-title">UX Insight — Microsoft Clarity</div><span class="flag neutral">Pending data</span></div>' +
+        '<div class="clarity-pending">' +
+          '<div class="clarity-pending-icon">&#128065;</div>' +
+          '<div class="clarity-pending-title">Clarity data not yet available</div>' +
+          '<div class="clarity-pending-msg">' + esc(reason) + '<br><br>' +
+          'Microsoft Clarity has a 48-hour data delay for new projects. Once data is available, this section will show sessions, scroll depth, dead clicks, and rage clicks for [your-domain.edu].' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    return;
+  }
+
+  // Has data — render metrics
+  var clarityBase = 'https://clarity.microsoft.com/projects/view/YOUR_CLARITY_PROJECT_ID';
+  var clarityDeadClicks = clarityBase + '/heatmaps';
+  var clarityRecordings = clarityBase + '/recordings';
+  var clarityDashboard  = clarityBase + '/dashboard';
+
+  el.innerHTML =
+    '<div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap">' +
+      '<a href="'+clarityDashboard+'" target="_blank" rel="noopener" style="color:var(--maroon-light);text-decoration:none">→ Open Clarity Dashboard</a>' +
+      '<a href="'+clarityDeadClicks+'" target="_blank" rel="noopener" style="color:var(--maroon-light);text-decoration:none">→ View Heatmaps</a>' +
+      '<a href="'+clarityRecordings+'" target="_blank" rel="noopener" style="color:var(--maroon-light);text-decoration:none">→ Session Recordings</a>' +
+    '</div>' +
+    '<div class="g4" style="margin-bottom:10px">' +
+      kpiHTML('maroon',  'Sessions (last 3 days)', cl.totalSessions ? cl.totalSessions.value : '—', 'Clarity-tracked sessions') +
+      kpiHTML('neutral', 'Page views',             cl.pageViews     ? cl.pageViews.value     : '—', 'Pages viewed this period') +
+      kpiHTML(cl.deadClickRate && cl.deadClickRate.raw > 10 ? 'warn' : 'ok',
+                         'Dead click rate',        cl.deadClickRate ? cl.deadClickRate.value  : '—', '% sessions with dead clicks') +
+      kpiHTML('neutral', 'Dead clicks (total)',    cl.deadClicks    ? cl.deadClicks.value     : '—', 'Clicks on non-interactive elements') +
+    '</div>' +
+    '<div class="g2">' +
+      '<div class="card"><div class="card-head"><div class="card-title">What these signals mean</div></div>' +
+        '<div class="card-body">' +
+          '<div class="ux-metric"><span class="ux-metric-label">Dead clicks</span><span class="ux-metric-value">' + (cl.deadClicks ? cl.deadClicks.value : '\u2014') + '<span class="ux-metric-note"> total</span></span></div>' +
+          '<div class="ux-metric"><span class="ux-metric-label">Dead click rate</span><span class="ux-metric-value">' + (cl.deadClickRate ? cl.deadClickRate.value : '\u2014') + '<span class="ux-metric-note"> of sessions</span></span></div>' +
+          '<div class="ux-metric"><span class="ux-metric-label">Data window</span><span class="ux-metric-value" style="font-size:13px">' + (cl.dataWindow || 'Last 3 days') + '</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card"><div class="card-head"><div class="card-title">What to do with Clarity data</div></div>' +
+        '<div class="card-body" style="display:flex;flex-direction:column;gap:8px">' +
+          '<div class="ctx-box maroon"><div class="ctx-title">High dead click rate (&gt;10%)</div><p>Users clicking non-interactive elements. Review heatmaps in Clarity for those pages — common causes: underlined text that looks like links, images without click actions.</p></div>' +
+          '<div class="ctx-box amber"><div class="ctx-title">Note on data availability</div><p>Clarity API only returns last 1-3 days of data. For deeper historical analysis, log into clarity.microsoft.com directly. Sessions here reflect recent traffic only.</p></div>' +
+          '<div class="ctx-box green"><div class="ctx-title">Session recordings</div><p>Go to clarity.microsoft.com to watch session recordings — these reveal specific UX problems that aggregate data alone cannot surface.</p></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+function kpiHTML(status, label, value, sub) {
+  return '<div class="kpi ' + status + '">' +
+    '<div class="kpi-label">' + esc(label) + '</div>' +
+    '<div class="kpi-value">' + esc(value) + '</div>' +
+    '<div class="kpi-sub">' + esc(sub) + '</div>' +
+    '</div>';
+}
+
+// =====================================================
+// INVENTORY
+// =====================================================
+function populateInventory(inv) {
+  if (!inv) return;
+  var mon   = inv.filter(function(s) { return s.monitored; }).length;
+  var ext   = inv.filter(function(s) { return !s.monitored; }).length;
+  var total = inv.length + 19;
+  set('inv-total',     String(total));
+  set('inv-monitored', String(mon + 19));
+  set('inv-external',  String(ext));
+
+  var el = document.getElementById('centersBody');
+  var sorted = inv.slice().sort(function(a,b) {
+    if (a.monitored && !b.monitored) return -1;
+    if (!a.monitored && b.monitored) return 1;
+    return a.name.localeCompare(b.name);
+  });
+  el.innerHTML = sorted.map(function(s) {
+    var pc = s.platform.toLowerCase().replace(/[^a-z]/g,'') || 'unknown';
+    return '<tr><td style="font-size:13px"><a href="'+s.url+'" target="_blank" rel="noopener" style="color:var(--maroon-light);text-decoration:none">'+esc(s.name)+'</a></td>' +
+      '<td class="mono" style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+s.url+'</td>' +
+      '<td><span class="pill '+pc+'">'+esc(s.platform)+'</span></td>' +
+      '<td>'+(s.monitored?'<span class="flag ok">Siteimprove</span>':'<span class="flag neutral">External</span>')+'</td></tr>';
+  }).join('');
+}
+
+// =====================================================
+// STATE OF THE UNION
+// =====================================================
+function generateSotu(ga4, si, fd) {
+  var parts = [], chips = [];
+  var sessions  = ga4.sessions         ? (ga4.sessions.raw           || 0) : 0;
+  var engRaw    = ga4.engagementRate   ? (ga4.engagementRate.raw     || 0) : 0;
+  var durRaw    = ga4.avgDuration      ? (ga4.avgDuration.raw        || 0) : 0;
+  var aRaw      = si.accessibilityScore ? (si.accessibilityScore.raw || 0) : 0;
+  var sRaw      = si.seoScore           ? (si.seoScore.raw           || 0) : 0;
+  var bRaw      = si.brokenLinks        ? (si.brokenLinks.raw        || 0) : 0;
+  var tickRaw   = fd.ticketVolume       ? (fd.ticketVolume.raw       || 0) : 0;
+  var resRaw    = fd.resolutionRate     ? parseFloat(fd.resolutionRate.value) || 0 : 0;
+  var respRaw   = fd.avgResponseTime    ? parseFloat(fd.avgResponseTime.value) || 0 : 0;
+
+  if (sessions > 0) {
+    var sStr = ga4.sessions.value;
+    if (durRaw >= T.durGood && engRaw >= T.engGood) {
+      parts.push('<span class="g">Reach is strong</span> \u2014 ' + sStr + ' sessions, ' + engRaw + '% engagement rate, and ' + (ga4.avgDuration ? ga4.avgDuration.value : '\u2014') + ' avg session duration, all above higher-education benchmarks.');
+      chips.push({ label: 'Enrollment: On track', cls: 'chip-g' });
+    } else {
+      parts.push('<span class="w">Reach is moderate</span> \u2014 ' + sStr + ' sessions this period, but engagement metrics are below target. Content quality review recommended.');
+      chips.push({ label: 'Enrollment: Watch', cls: 'chip-w' });
+    }
+  }
+
+  if (aRaw > 0 || sRaw > 0) {
+    if (aRaw >= T.accessGood && sRaw >= T.seoGood) {
+      parts.push('<span class="g">Content quality is healthy</span> \u2014 accessibility ' + aRaw + ' and SEO ' + sRaw + ' both exceed the 80-point threshold. ' + (bRaw > 0 ? bRaw + ' broken links remain.' : 'No broken links.'));
+      chips.push({ label: 'Quality: On track', cls: 'chip-g' });
+    } else {
+      var below = [];
+      if (aRaw < T.accessGood) below.push('accessibility (' + aRaw + ')');
+      if (sRaw < T.seoGood)    below.push('SEO (' + sRaw + ')');
+      parts.push('<span class="w">Quality needs attention</span> \u2014 ' + below.join(' and ') + ' below the 80-point threshold. ADA Title II compliance deadline approaching.');
+      chips.push({ label: 'Quality: Action needed', cls: 'chip-w' });
+    }
+  }
+
+  if (tickRaw > 0) {
+    if (resRaw >= 95 && respRaw <= T.respWarn) {
+      parts.push('<span class="g">Team is performing well</span> \u2014 ' + (fd.ticketVolume ? fd.ticketVolume.value : '\u2014') + ' requests with ' + resRaw + '% resolution and ' + respRaw + 'h avg response. Training opportunity exists to reduce volume.');
+      chips.push({ label: 'Capacity: Healthy', cls: 'chip-g' });
+    } else {
+      parts.push('<span class="w">Capacity under pressure</span> \u2014 response or resolution metrics below target. Review ticket backlog and consider delegation strategy.');
+      chips.push({ label: 'Capacity: Watch', cls: 'chip-w' });
+    }
+  }
+
+  var sotuEl = document.getElementById('sotuText');
+  sotuEl.innerHTML = parts.join(' ') || 'Insufficient data. Ensure all APIs have run successfully.';
+
+  var chipsEl = document.getElementById('sotuChips');
+  chipsEl.innerHTML = chips.map(function(c) {
+    return '<div class="chip ' + c.cls + '"><div class="chip-dot"></div>' + c.label + '</div>';
+  }).join('');
+}
+
+// =====================================================
+// SIGNAL REPORT
+// =====================================================
+function generateSignalReport(ga4, si, fd, cl) {
+  var sessions = ga4.sessions         ? ga4.sessions.value         : '\u2014';
+  var newUsers = ga4.newUsers         ? ga4.newUsers.value         : '\u2014';
+  var duration = ga4.avgDuration      ? ga4.avgDuration.value      : '\u2014';
+  var engage   = ga4.engagementRate   ? ga4.engagementRate.value   : '\u2014';
+  var aScore   = si.accessibilityScore? si.accessibilityScore.value: '\u2014';
+  var sScore   = si.seoScore          ? si.seoScore.value          : '\u2014';
+  var broken   = si.brokenLinks       ? si.brokenLinks.value       : '\u2014';
+  var tickets  = fd.ticketVolume      ? fd.ticketVolume.value      : '\u2014';
+  var resolved = fd.resolutionRate    ? fd.resolutionRate.value    : '\u2014';
+  var response = fd.avgResponseTime   ? fd.avgResponseTime.value   : '\u2014';
+
+  var engRaw = ga4.engagementRate ? (ga4.engagementRate.raw || 0) : 0;
+  var durRaw = ga4.avgDuration    ? (ga4.avgDuration.raw    || 0) : 0;
+  var aRaw   = si.accessibilityScore ? (si.accessibilityScore.raw || 0) : 0;
+  var sRaw   = si.seoScore           ? (si.seoScore.raw           || 0) : 0;
+  var bRaw   = si.brokenLinks        ? (si.brokenLinks.raw        || 0) : 0;
+
+  var wins    = [];
+  var actions = [];
+
+  if (engRaw >= 55) wins.push('engagement rate of <strong class="g">' + engage + '</strong> exceeds the 55% higher-ed benchmark');
+  if (durRaw >= 150) wins.push('average session duration of <strong class="g">' + duration + '</strong> is above the 2:30 higher-ed average');
+  if (aRaw >= 80)   wins.push('accessibility score of <strong class="g">' + aScore + '</strong> meets WCAG 2.1 AA compliance');
+  if (sRaw >= 80)   wins.push('SEO score of <strong class="g">' + sScore + '</strong> is above the good threshold');
+
+  if (aRaw > 0 && aRaw < 80)   actions.push('Address accessibility issues to bring score above 80 (WCAG 2.1 AA compliance — Title II deadline)');
+  if (sRaw > 0 && sRaw < 80)   actions.push('Review Siteimprove SEO report and prioritize missing meta descriptions, heading structure, and alt text');
+  if (bRaw >= 20)               actions.push('Resolve ' + broken + ' broken links — export from Siteimprove and assign to departments');
+  if (engRaw > 0 && engRaw < 40) actions.push('Investigate low engagement rate (' + engage + ') — audit top landing pages for content clarity');
+
+  var now  = new Date();
+  var date = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  var period = state.period + '-day period';
+
+  var html = '<p><strong>[Your University] | [Your College/Unit] | Web Team</strong><br>' +
+    date + ' &bull; ' + period + '</p>' +
+    (wins.length > 0
+      ? '<p><strong>What\'s working:</strong> This period the [Your unit] web ecosystem saw ' + wins.slice(0, -1).join(', ') + (wins.length > 1 ? ', and ' + wins[wins.length-1] : wins[0]) + '. Total sessions reached <strong class="g">' + sessions + '</strong> with <strong>' + newUsers + '</strong> first-time visitors reaching our sites organically.</p>'
+      : '') +
+    '<p><strong>Team performance:</strong> The MarComm web team handled <strong>' + tickets + '</strong> department requests this period with a <strong class="g">' + resolved + '</strong> resolution rate and <strong>' + response + '</strong> average first response time. Every request resolved is a department supported and a site improved.</p>' +
+    (actions.length > 0
+      ? '<p><strong>Actions in progress:</strong> ' + actions.map(function(a, i) { return (i+1) + '. ' + a + '.'; }).join(' ') + '</p>'
+      : '<p><strong>No critical actions needed</strong> &mdash; all key metrics are within target ranges. Continue monitoring and focus on proactive training and quality improvement.</p>') +
+    '<p style="font-size:12px;color:var(--text-muted)"><em>Data sources: Google Analytics 4, Siteimprove, Freshdesk. Report period: ' + period + '.</em></p>';
+
+  document.getElementById('signalBody').innerHTML = html;
+}
+
+// Share via email (mailto)
+function shareSignalEmail() {
+  var subject = encodeURIComponent('COAS Web Team Signal Report — ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+  var body    = encodeURIComponent(
+    'COAS Web Team Signal Report\n\n' +
+    'View the full interactive dashboard: ' + window.location.href + '\n\n' +
+    '--- Report Summary ---\n\n' +
+    (document.getElementById('signalBody') ? document.getElementById('signalBody').innerText : '') +
+    '\n\n---\nData sources: Google Analytics 4, Siteimprove, Freshdesk'
+  );
+  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+}
+
+// Download as styled HTML
+function downloadSignal() {
+  var bodyContent = document.getElementById('signalBody') ? document.getElementById('signalBody').innerHTML : '';
+  var date = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>COAS Web Team Signal Report — ' + date + '</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">' +
+    '<style>' +
+    '* { box-sizing:border-box; margin:0; padding:0; }' +
+    'body { font-family:"IBM Plex Sans",sans-serif; font-size:15px; color:#1a1a18; background:#fff; max-width:680px; margin:0 auto; padding:40px 32px; }' +
+    'h1 { font-size:24px; font-weight:600; margin-bottom:4px; color:#500000; }' +
+    '.eyebrow { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#999; margin-bottom:16px; }' +
+    '.divider { border:none; border-top:2px solid #500000; margin:16px 0; }' +
+    'p { margin-bottom:14px; line-height:1.7; color:#333; }' +
+    'strong { font-weight:600; color:#1a1a18; }' +
+    '.g { color:#1a5c2e; font-weight:600; }' +
+    '.w { color:#7a4a00; font-weight:600; }' +
+    '.a { color:#8c1515; font-weight:600; }' +
+    '.footer { margin-top:32px; padding-top:16px; border-top:1px solid #eee; font-size:12px; color:#999; }' +
+    '</style></head><body>' +
+    '<div class="eyebrow">[Your University] &bull; [Your College/Unit] &bull; Web Team</div>' +
+    '<h1>Web Team Signal Report</h1>' +
+    '<div class="eyebrow">' + date + '</div>' +
+    '<hr class="divider">' +
+    bodyContent +
+    '<div class="footer">Generated by [Your Unit] Web Ops Dashboard &bull; Data: Google Analytics 4, Siteimprove, Freshdesk</div>' +
+    '</body></html>';
+
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'coas-signal-report-' + new Date().toISOString().split('T')[0] + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// =====================================================
+// RECOMMENDATIONS
+// =====================================================
+function generateRecs(ga4, si, fd) {
+  var recs  = [];
+  var aRaw  = si.accessibilityScore ? (si.accessibilityScore.raw || 0) : 0;
+  var sRaw  = si.seoScore           ? (si.seoScore.raw           || 0) : 0;
+  var bRaw  = si.brokenLinks        ? (si.brokenLinks.raw        || 0) : 0;
+  var engRaw= ga4.engagementRate    ? (ga4.engagementRate.raw    || 0) : 0;
+  var durRaw= ga4.avgDuration       ? (ga4.avgDuration.raw       || 0) : 0;
+  var tick  = fd.ticketVolume       ? (fd.ticketVolume.raw       || 0) : 0;
+  var res   = fd.resolutionRate     ? parseFloat(fd.resolutionRate.value) || 0 : 0;
+  var resp  = fd.avgResponseTime    ? parseFloat(fd.avgResponseTime.value) || 0 : 0;
+  var depts = ga4.deptBreakdown     || [];
+
+  if (aRaw > 0 && aRaw < T.accessGood)
+    recs.push({ level:'critical', text:'<strong>Accessibility score (' + aRaw + ') below WCAG 2.1 AA threshold of 80.</strong> ADA Title II compliance applies to TAMU (population >50,000). Deadline: April 2026.', action:'Run Siteimprove accessibility report \u2192 prioritize confirmed issues \u2192 schedule remediation sprint with web editors.' });
+
+  if (bRaw >= T.brokenWarn)
+    recs.push({ level: bRaw >= T.brokenAlert ? 'critical' : 'warning', text:'<strong>' + bRaw + ' broken links detected</strong> across [your-domain.edu]. High counts degrade SEO and damage AI crawler trust.', action:'Export broken links from Siteimprove \u2192 assign to relevant departments \u2192 set 2-week resolution target.' });
+
+  if (sRaw > 0 && sRaw < T.seoGood)
+    recs.push({ level: sRaw < T.seoWarn ? 'critical' : 'warning', text:'<strong>SEO score (' + sRaw + ') below good threshold.</strong> Directly impacts organic search visibility and enrollment discovery.', action:'Review Siteimprove SEO issues \u2192 prioritize meta descriptions, heading structure, image alt text.' });
+
+  if (engRaw > 0 && engRaw < T.engWarn)
+    recs.push({ level:'warning', text:'<strong>Engagement rate (' + engRaw + '%) below 40% warning threshold.</strong> Visitors are arriving but not engaging.', action:'Audit top landing pages for content clarity, load time, mobile usability. Check for misleading search snippets.' });
+
+  if (resp > T.respAlert)
+    recs.push({ level:'critical', text:'<strong>Avg. first response (' + resp + 'h) exceeds 8-hour alert threshold.</strong> May indicate capacity issues.', action:'Review ticket queue distribution. Consider triage protocol. Evaluate staffing coverage.' });
+  else if (resp > T.respWarn)
+    recs.push({ level:'warning', text:'<strong>Avg. first response (' + resp + 'h) above 4-hour target.</strong>', action:'Review daily ticket triage. Set response-time alerts in Freshdesk.' });
+
+  if (res > 0 && res < T.resWarn)
+    recs.push({ level:'warning', text:'<strong>Resolution rate (' + res + '%) below 85% target.</strong>', action:'Audit open tickets older than 14 days. Identify blockers. Escalate or close stale items.' });
+
+  if (depts.length > 0) {
+    var maxS = depts[0].sessions || 1;
+    var low  = depts.filter(function(d) { return d.sessions > 0 && d.sessions < maxS * 0.1; });
+    if (low.length > 0)
+      recs.push({ level:'info', text:'<strong>Low traffic on ' + low.length + ' dept site(s): ' + low.slice(0,3).map(function(d){return d.name;}).join(', ') + (low.length>3?'...':'') + '.</strong> May indicate content staleness or low departmental engagement.', action:'Review in GA4 and Siteimprove \u2192 schedule content refresh conversation with department contacts.' });
+  }
+
+  if (tick >= 50)
+    recs.push({ level:'info', text:'<strong>' + (fd.ticketVolume ? fd.ticketVolume.value : tick) + ' requests represent a training opportunity.</strong> Systematic editor training would reduce volume and free MarComm for strategic work.', action:'Identify top 5 requesting departments \u2192 prioritize for Cascade editor training \u2192 track ticket reduction as training ROI.' });
+
+  if (recs.length === 0)
+    recs.push({ level:'info', text:'<strong>No critical or warning issues detected.</strong> All monitored metrics within acceptable thresholds.', action:'Continue monitoring. Consider expanding Siteimprove coverage to Centers & Institutes.' });
+
+  var el = document.getElementById('recList');
+  el.innerHTML = recs.map(function(r) {
+    return '<div class="rec ' + r.level + '" role="listitem">' +
+      '<span class="rec-badge">' + r.level + '</span>' +
+      '<div><div class="rec-body">' + r.text + '</div><div class="rec-action">\u21B3 ' + r.action + '</div></div>' +
+      '</div>';
+  }).join('');
+}
+
+// =====================================================
+// HEALTH BADGE
+// =====================================================
+function updateHealthBadge(si, fd) {
+  var aRaw = si.accessibilityScore ? (si.accessibilityScore.raw || 0) : 0;
+  var sRaw = si.seoScore           ? (si.seoScore.raw           || 0) : 0;
+  var bRaw = si.brokenLinks        ? (si.brokenLinks.raw        || 0) : 0;
+  var resp = fd.avgResponseTime    ? parseFloat(fd.avgResponseTime.value) || 0 : 0;
+
+  var crit = (aRaw > 0 && aRaw < T.accessWarn) || (sRaw > 0 && sRaw < T.seoWarn) || bRaw >= T.brokenAlert || resp > T.respAlert;
+  var warn = (aRaw > 0 && aRaw < T.accessGood) || (sRaw > 0 && sRaw < T.seoGood) || bRaw >= T.brokenWarn  || resp > T.respWarn;
+
+  var badge = document.getElementById('healthBadge');
+  if (crit)      { badge.textContent = '\u26A0 Issues'; badge.className = 'health-badge health-alert'; }
+  else if (warn) { badge.textContent = '\u25B3 Warnings'; badge.className = 'health-badge health-warn'; }
+  else           { badge.textContent = '\u2713 Healthy'; badge.className = 'health-badge health-good'; }
+}
+
+function updateStrategicPriorities(ga4, si, fd) {
+  set('sp-enroll', ga4.admissionsVisits ? ga4.admissionsVisits.value : '—');
+}
+
+// =====================================================
+// SVG LINE CHART — static (used internally)
+// =====================================================
+function buildSVGLine(vals, labels, W, H, color) {
+  var max = Math.max.apply(null, vals) || 1;
+  var min = Math.min.apply(null, vals);
+  if (max === min) max = min + 1;
+  var PAD = 8;
+  var n   = vals.length;
+  if (n < 2) return '';
+
+  var pts = vals.map(function(v, i) {
+    return {
+      x: PAD + (i/(n-1)) * (W - PAD*2),
+      y: PAD + (1 - (v-min)/(max-min)) * (H - PAD*2)
+    };
+  });
+
+  var line = pts.map(function(p){return p.x+','+p.y;}).join(' ');
+  var area = 'M'+pts[0].x+','+pts[0].y+pts.slice(1).map(function(p){return'L'+p.x+','+p.y;}).join('')+'L'+pts[n-1].x+','+H+'L'+pts[0].x+','+H+'Z';
+  var dots = pts.map(function(p,i){
+    var v = vals[i] >= 1000 ? (vals[i]/1000).toFixed(1)+'k' : String(vals[i]);
+    return '<circle cx="'+p.x+'" cy="'+p.y+'" r="3" fill="'+color+'" stroke="var(--bg-card)" stroke-width="1.5"><title>'+v+'</title></circle>';
+  }).join('');
+
+  var lp  = pts[n-1];
+  var lv  = vals[n-1] >= 1000 ? (vals[n-1]/1000).toFixed(1)+'k' : String(vals[n-1]);
+
+  return '<svg width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
+    '<defs><linearGradient id="sg_'+color.replace('#','')+'" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="'+color+'" stop-opacity="0.2"/>' +
+    '<stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/>' +
+    '</linearGradient></defs>' +
+    '<path d="'+area+'" fill="url(#sg_'+color.replace('#','')+')"/>' +
+    '<polyline points="'+line+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+    dots +
+    '<text x="'+lp.x+'" y="'+(lp.y-8)+'" text-anchor="middle" font-size="10" font-weight="600" fill="'+color+'" font-family="IBM Plex Mono,monospace">'+lv+'</text>' +
+    '</svg>';
+}
+
+// =====================================================
+// SVG AREA CHART WITH HOVER TOOLTIP
+// Used for Monthly Trend — Sessions
+// =====================================================
+function buildHoverSVGLine(vals, labels, W, H, color, metricName) {
+  var max = Math.max.apply(null, vals) || 1;
+  var min = 0; // always baseline from zero
+  if (max === min) max = 1;
+  var PADL = 8, PADR = 8, PADT = 16, PADB = 20;
+  var plotW = W - PADL - PADR;
+  var plotH = H - PADT - PADB;
+  var n = vals.length;
+  if (n < 2) return '<div style="padding:8px;font-family:var(--mono);font-size:11px;color:var(--text-muted)">Not enough data points</div>';
+
+  var pts = vals.map(function(v, i) {
+    return {
+      x: PADL + (i/(n-1)) * plotW,
+      y: PADT + (1 - v/max) * plotH,
+      v: v,
+      label: labels[i] || ''
+    };
+  });
+
+  var linePts = pts.map(function(p){ return p.x+','+p.y; }).join(' ');
+  var areaD   = 'M'+pts[0].x+','+(PADT+plotH)+' L'+pts[0].x+','+pts[0].y+
+    pts.slice(1).map(function(p){return ' L'+p.x+','+p.y;}).join('')+
+    ' L'+pts[n-1].x+','+(PADT+plotH)+' Z';
+
+  var gradId = 'hsg_'+color.replace(/[^a-z0-9]/gi,'');
+
+  // X labels
+  var xLabels = pts.map(function(p) {
+    return '<text x="'+p.x+'" y="'+(H-4)+'" text-anchor="middle" font-size="9" fill="var(--text-muted)" font-family="IBM Plex Mono,monospace">'+p.label+'</text>';
+  }).join('');
+
+  // Dots — visible small + invisible large hit target
+  var dots = pts.map(function(p) {
+    var vFmt = p.v >= 1000 ? (p.v/1000).toFixed(1)+'k' : String(p.v);
+    return '<g class="hover-dot" data-val="'+vFmt+'" data-label="'+esc(p.label)+'" data-x="'+p.x+'" data-y="'+p.y+'">' +
+      '<circle cx="'+p.x+'" cy="'+p.y+'" r="12" fill="transparent" style="cursor:crosshair"/>' +
+      '<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="'+color+'" stroke="var(--bg-card)" stroke-width="1.5" class="dot-visible"/>' +
+      '</g>';
+  }).join('');
+
+  // Vertical crosshair line (hidden by default)
+  var crosshair = '<line id="trendCrosshair" x1="0" y1="'+PADT+'" x2="0" y2="'+(PADT+plotH)+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>';
+
+  var svgId = 'trendSVG_' + Date.now();
+  var tipId = 'trendTip_' + Date.now();
+
+  var svgHTML =
+    '<div style="position:relative">' +
+    '<svg id="'+svgId+'" width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="overflow:visible;display:block">' +
+    '<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="'+color+'" stop-opacity="0.25"/>' +
+    '<stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/>' +
+    '</linearGradient></defs>' +
+    '<path d="'+areaD+'" fill="url(#'+gradId+')"/>' +
+    '<polyline points="'+linePts+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+    xLabels + crosshair + dots +
+    '</svg>' +
+    '<div id="'+tipId+'" style="position:absolute;pointer-events:none;opacity:0;transition:opacity 0.12s;' +
+      'background:var(--bg-card);border:1px solid var(--border);border-left:3px solid '+color+';border-radius:3px;' +
+      'padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--text-primary);' +
+      'box-shadow:0 2px 8px rgba(0,0,0,0.3);white-space:nowrap;z-index:10;' +
+      'transform:translate(-50%,-120%)"></div>' +
+    '</div>';
+
+  // Attach events after DOM render
+  setTimeout(function() {
+    var svg = document.getElementById(svgId);
+    var tip = document.getElementById(tipId);
+    var ch  = document.getElementById('trendCrosshair');
+    if (!svg || !tip) return;
+
+    svg.querySelectorAll('.hover-dot').forEach(function(g) {
+      g.addEventListener('mouseenter', function() {
+        var val    = this.getAttribute('data-val');
+        var label  = this.getAttribute('data-label');
+        var dx     = parseFloat(this.getAttribute('data-x'));
+        var dy     = parseFloat(this.getAttribute('data-y'));
+        var svgW   = svg.viewBox.baseVal.width;
+        var svgH   = svg.viewBox.baseVal.height;
+        // Convert SVG coords to percent for positioning
+        tip.style.left    = (dx / svgW * 100) + '%';
+        tip.style.top     = (dy / svgH * 100) + '%';
+        tip.style.opacity = '1';
+        tip.innerHTML     = '<strong>'+esc(label)+'</strong><br>'+val+' sessions';
+        if (ch) { ch.setAttribute('x1', dx); ch.setAttribute('x2', dx); ch.setAttribute('opacity', '0.6'); }
+        // Highlight the visible dot
+        this.querySelector('.dot-visible').setAttribute('r', '5');
+      });
+      g.addEventListener('mouseleave', function() {
+        tip.style.opacity = '0';
+        if (ch) ch.setAttribute('opacity', '0');
+        this.querySelector('.dot-visible').setAttribute('r', '3.5');
+      });
+    });
+  }, 50);
+
+  return svgHTML;
+}
+
+// =====================================================
+// UTILITIES
+// =====================================================
+function set(id, val) { var e=document.getElementById(id); if(e) e.textContent=val; }
+function setClass(id, cls) { var e=document.getElementById(id); if(e) e.className=cls; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDur(s) { s=Math.abs(parseInt(s)||0); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function scoreColor(v, good, warn) {
+  if (v >= good) return '#1a5c2e';
+  if (v >= warn) return '#c87800';
+  return '#8c1515';
+}
+function animateBar(id, val, color) {
+  var e = document.getElementById(id);
+  if (e) { e.style.width = Math.min(val, 100) + '%'; if (color) e.style.background = color; }
+}
+function setFlag(id, val, good, warn) {
+  var e = document.getElementById(id);
+  if (!e) return;
+  if (val >= good)      { e.textContent = val + ' \u2713'; e.className = 'flag ok'; }
+  else if (val >= warn) { e.textContent = val + ' \u26A0'; e.className = 'flag warn'; }
+  else if (val > 0)     { e.textContent = val + ' \u2715'; e.className = 'flag alert'; }
+  else                  { e.textContent = 'N/A';          e.className = 'flag neutral'; }
+}
+function setKpiStatus(id, val, good, warn) {
+  var e = document.getElementById(id);
+  if (!e) return;
+  if (val >= good)      e.className = 'kpi ok';
+  else if (val >= warn) e.className = 'kpi warn';
+  else if (val > 0)     e.className = 'kpi alert';
+  else                  e.className = 'kpi neutral';
+}
+</script>
+</body>
+</html>
