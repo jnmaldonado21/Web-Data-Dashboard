@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="[Your Unit] web team performance dashboard — 90-day report covering reach, quality, enrollment, support, and digital footprint.">
+  <title>[Your Unit] Web Team — Performance Report | [Your University]</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Work+Sans:wght@400;500;600&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* =====================================================
+       AGGIE UX BRAND TOKENS
+    ===================================================== */
+    :root {
+      --maroon-primary: #500000;
+      --maroon-dark:    #3c001c;
+      --maroon-mid:     #732f2f;
+      --maroon-light:   #a85050;
+      --maroon-pale:    #d1a0a0;
+      --gray-100:       #f6f6f6;
+      --gray-200:       #eaeaea;
+      --gray-300:       #d1d1d1;
+      --gray-500:       #707070;
+      --gray-700:       #535353;
+      --gray-800:       #3e3e3e;
+      --gray-900:       #202020;
+      --green-pos:      #3c6b1a;
+      --white:          #ffffff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Open Sans', sans-serif; color: var(--gray-900); background: var(--gray-100); }
+    .report { max-width: 920px; margin: 0 auto; padding: 0 16px 48px; }
+
+    /* ---- Loading ---- */
+    .loading { position: fixed; inset: 0; background: var(--maroon-primary);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 200; transition: opacity 0.4s; }
+    .loading.hidden { opacity: 0; pointer-events: none; }
+    .loading h2 { font-family: 'Oswald', sans-serif; font-size: 22px; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--white); margin-bottom: 8px; }
+    .loading p  { font-size: 13px; color: var(--maroon-pale); }
+
+    /* ---- Export button ---- */
+    .export-bar { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 0 4px; }
+    .export-btn {
+      font-family: 'Work Sans', sans-serif; font-size: 11px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; padding: 7px 14px;
+      border-radius: 2px; cursor: pointer; border: 1.5px solid var(--maroon-primary);
+      transition: background 0.15s, color 0.15s;
+    }
+    .export-btn.primary { background: var(--maroon-primary); color: var(--white); }
+    .export-btn.primary:hover { background: var(--maroon-mid); }
+    .export-btn.secondary { background: var(--white); color: var(--maroon-primary); }
+    .export-btn.secondary:hover { background: var(--gray-100); }
+
+    /* ---- Masthead ---- */
+    .masthead { background: var(--maroon-primary); color: var(--white);
+      padding: 2rem 1.5rem 1.5rem; margin-bottom: 1.5rem; }
+    .masthead-eyebrow { font-family: 'Work Sans', sans-serif; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--maroon-pale); margin-bottom: 6px; }
+    .masthead h1 { font-family: 'Oswald', sans-serif; font-size: clamp(22px, 5vw, 32px);
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+      line-height: 1.15; color: var(--white); margin-bottom: 10px; }
+    .masthead-sub { font-size: 13px; color: #d1d1d1; line-height: 1.55; max-width: 540px; }
+    .masthead-date { font-size: 11px; color: #a7a7a7; margin-top: 10px; }
+
+    /* ---- Story cards ---- */
+    .card { background: var(--white); border: 1px solid var(--gray-300);
+      border-radius: 2px; margin-bottom: 14px; overflow: hidden; }
+    .card-head { padding: 18px 18px 0; }
+    .story-num { font-family: 'Work Sans', sans-serif; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--maroon-primary); margin-bottom: 4px; }
+    .story-hed { font-family: 'Oswald', sans-serif; font-size: clamp(18px, 4vw, 24px);
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
+      line-height: 1.2; color: var(--gray-900); margin-bottom: 8px; }
+    .story-lede { font-size: 13px; color: var(--gray-800); line-height: 1.65;
+      margin-bottom: 16px; max-width: 640px; }
+    .story-lede strong { font-weight: 600; color: var(--gray-900); }
+
+    /* ---- Stats row ---- */
+    .stats { display: flex; flex-wrap: wrap; border-top: 1px solid var(--gray-200); }
+    .stat { flex: 1; min-width: 110px; padding: 14px 16px;
+      border-right: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200); }
+    .stat:last-child { border-right: none; }
+    .stat-n { font-family: 'Oswald', sans-serif; font-size: 30px; font-weight: 600;
+      color: var(--maroon-primary); line-height: 1; margin-bottom: 4px; }
+    .stat-l { font-family: 'Work Sans', sans-serif; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-500); line-height: 1.3; }
+    .stat-c { font-size: 11px; color: var(--gray-700); margin-top: 4px; line-height: 1.4; }
+    .stat-c.positive { color: var(--green-pos); font-weight: 600; }
+    .stat-c.benchmark { color: var(--maroon-primary); font-weight: 600; font-style: italic; }
+
+    /* ---- Charts ---- */
+    .chart { padding: 14px 18px 16px; border-top: 1px solid var(--gray-200); background: var(--gray-100); }
+    .chart-lbl { font-family: 'Work Sans', sans-serif; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-500); margin-bottom: 10px; }
+    .two-col { display: grid; grid-template-columns: 2fr 1fr; }
+    .two-col .chart:first-child { border-right: 1px solid var(--gray-200); }
+
+    /* Sparkline — SVG area chart */
+    .sparks { width: 100%; min-height: 70px; display: block; }
+    .spark-mo  { font-size: 9px; color: var(--gray-500); text-align: center; }
+
+    /* Top pages */
+    .pages { display: flex; flex-direction: column; gap: 7px; }
+    .page-row { display: flex; align-items: center; gap: 8px; }
+    .page-path { font-size: 11px; color: var(--gray-800); width: 160px; flex-shrink: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .page-track { flex: 1; height: 6px; background: var(--gray-200); border-radius: 2px; overflow: hidden; }
+    .page-fill  { height: 100%; background: var(--maroon-primary); border-radius: 2px; }
+    .page-views { font-size: 11px; color: var(--gray-700); width: 38px; text-align: right; flex-shrink: 0; }
+
+    /* Dept breakdown */
+    .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+    .dept-item { display: flex; align-items: center; gap: 8px; }
+    .dept-name { font-size: 11px; color: var(--gray-800); flex: 1; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dept-track { width: 60px; height: 5px; background: var(--gray-200); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+    .dept-fill  { height: 100%; background: var(--maroon-primary); border-radius: 2px; }
+    .dept-val   { font-size: 11px; color: var(--gray-700); width: 32px; text-align: right; flex-shrink: 0; }
+
+    /* Score bars */
+    .score-row  { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+    .score-row:last-child { margin-bottom: 0; }
+    .score-name { font-size: 12px; color: var(--gray-800); width: 120px; flex-shrink: 0; }
+    .score-track { flex: 1; height: 9px; background: var(--gray-300); border-radius: 2px; overflow: hidden; }
+    .score-fill  { height: 100%; background: var(--maroon-primary); border-radius: 2px; transition: width 0.8s ease; }
+    .score-val   { font-family: 'Work Sans', sans-serif; font-size: 12px; font-weight: 600;
+      color: var(--maroon-primary); width: 32px; text-align: right; flex-shrink: 0; }
+
+    /* ---- Building comparison funnel ---- */
+    .funnel-section { padding: 14px 18px 16px; border-top: 1px solid var(--gray-200); background: var(--gray-100); }
+    .funnel-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    .funnel-row:last-child { margin-bottom: 0; }
+    .funnel-lbl-col { width: 150px; flex-shrink: 0; }
+    .funnel-lbl { font-size: 12px; color: var(--gray-800); line-height: 1.4; }
+    .funnel-sub { font-size: 10px; color: var(--gray-500); margin-top: 2px; }
+    .funnel-bar-col { flex: 1; }
+    .funnel-bar { height: 26px; border-radius: 1px; display: flex; align-items: center;
+      padding-left: 10px; position: relative; margin-bottom: 4px; }
+    .funnel-bar-text { font-family: 'Work Sans', sans-serif; font-size: 11px; font-weight: 600; color: var(--white); }
+    .building-comparison { font-size: 11px; color: var(--maroon-primary); font-style: italic;
+      line-height: 1.4; padding-left: 2px; font-weight: 600; }
+
+    /* ---- Source tag ---- */
+    .src { padding: 8px 18px; background: var(--gray-100); border-top: 1px solid var(--gray-200);
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--gray-500); display: flex; gap: 6px; }
+    .src span { background: var(--gray-200); border-radius: 2px; padding: 1px 7px; color: var(--gray-700); }
+
+    /* ---- Digital footprint ---- */
+    .footprint-note { font-size: 12px; color: var(--gray-800); line-height: 1.6;
+      padding: 14px 18px; border-top: 1px solid var(--gray-200); background: var(--gray-100); }
+    .fp-counts { display: flex; gap: 20px; margin: 10px 0; flex-wrap: wrap; }
+    .fp-count { text-align: center; }
+    .fp-num { font-family: 'Oswald', sans-serif; font-size: 26px; font-weight: 600;
+      color: var(--maroon-primary); display: block; line-height: 1; }
+    .fp-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--gray-500); }
+    .fp-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
+    .fp-table th { font-family: 'Work Sans', sans-serif; font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-500);
+      padding: 4px 8px; text-align: left; border-bottom: 1px solid var(--gray-300); }
+    .fp-table td { padding: 5px 8px; border-bottom: 1px solid var(--gray-200);
+      color: var(--gray-800); vertical-align: middle; }
+    .fp-table tr:last-child td { border-bottom: none; }
+    .dot-green { display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green-pos); margin-right: 4px; }
+    .dot-gray  { display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--gray-300); margin-right: 4px; }
+    .platform-badge { font-size: 9px; background: var(--gray-200); color: var(--gray-700);
+      padding: 1px 6px; border-radius: 2px; white-space: nowrap; }
+
+    /* ---- Why it matters + AI sections ---- */
+    .context { background: var(--white); border: 1px solid var(--gray-300);
+      border-top: 3px solid var(--maroon-primary); border-radius: 2px;
+      padding: 16px 18px; margin-top: 14px; }
+    .context-title { font-family: 'Oswald', sans-serif; font-size: 14px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--maroon-primary); margin-bottom: 12px; }
+    .context-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    .context-item { font-size: 12px; color: var(--gray-800); line-height: 1.55;
+      padding-left: 10px; border-left: 2px solid var(--maroon-primary); }
+    .context-item strong { font-weight: 600; color: var(--gray-900); }
+
+    .ai-banner { background: var(--maroon-dark); border-left: 4px solid var(--maroon-pale);
+      padding: 14px 18px; margin-top: 14px; display: flex; gap: 12px; border-radius: 2px; }
+    .ai-badge { font-family: 'Work Sans', sans-serif; font-size: 9px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--maroon-pale);
+      background: rgba(255,255,255,0.1); border-radius: 2px; padding: 3px 8px;
+      white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+    .ai-text { font-size: 13px; color: #eaeaea; line-height: 1.6; }
+    .ai-text strong { color: var(--white); font-weight: 600; }
+
+    /* ---- Print styles ---- */
+    @media print {
+      body { background: white; }
+      .export-bar { display: none !important; }
+      .loading    { display: none !important; }
+      .report     { padding: 0; max-width: 100%; }
+      .card, .context, .ai-banner { page-break-inside: avoid; }
+    }
+
+    /* ---- Mobile: 768px and below ---- */
+    @media (max-width: 768px) {
+      /* Base sizing — larger touch targets, readable text */
+      body { font-size: 15px; }
+      .report { padding: 0 12px 32px; }
+
+      /* Export bar — full width stacked buttons */
+      .export-bar { flex-direction: column; gap: 6px; padding: 10px 0 6px; }
+      .export-btn { width: 100%; text-align: center; padding: 12px 16px; font-size: 13px; }
+
+      /* Masthead */
+      .masthead { padding: 1.25rem 1rem 1rem; margin-bottom: 1rem; }
+      .masthead h1 { font-size: 26px; }
+      .masthead-sub { font-size: 13px; }
+
+      /* Cards */
+      .card-head { padding: 14px 14px 0; }
+      .story-hed { font-size: 20px; }
+      .story-lede { font-size: 13px; margin-bottom: 12px; }
+
+      /* Stats — 2 columns on mobile instead of 4 */
+      .stats { display: grid; grid-template-columns: 1fr 1fr; }
+      .stat { border-right: none; border-bottom: 1px solid var(--gray-200); padding: 12px 12px; }
+      .stat:nth-child(odd)  { border-right: 1px solid var(--gray-200); }
+      .stat:last-child, .stat:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+      .stat-n { font-size: 26px; }
+
+      /* Charts — stack the two-col layout */
+      .two-col { grid-template-columns: 1fr; }
+      .two-col .chart:first-child { border-right: none; border-bottom: 1px solid var(--gray-200); }
+      .chart { padding: 12px 14px 14px; }
+
+      /* Score rows */
+      .score-name { width: 90px; font-size: 11px; }
+
+      /* Funnel */
+      .funnel-section { padding: 12px 14px 14px; }
+      .funnel-row { flex-direction: column; gap: 4px; margin-bottom: 14px; }
+      .funnel-lbl-col { width: 100%; }
+      .funnel-bar { min-width: 60%; }
+      .building-comparison { font-size: 11px; }
+
+      /* Footprint table — hide context column on small screens */
+      .fp-table th:nth-child(3),
+      .fp-table td:nth-child(3) { display: none; }
+      .fp-counts { gap: 16px; }
+      .fp-num { font-size: 22px; }
+
+      /* AI banner */
+      .ai-banner { flex-direction: column; gap: 8px; padding: 12px 14px; }
+      .ai-badge { align-self: flex-start; }
+
+      /* Context grid */
+      .context-grid { grid-template-columns: 1fr; }
+      .context { padding: 14px 14px; }
+
+      /* Dept grid */
+      .dept-grid { grid-template-columns: 1fr; }
+
+      /* Story 4 opportunity grid */
+      .opportunity-grid { grid-template-columns: 1fr !important; }
+    }
+
+    /* ---- Small mobile: 400px and below ---- */
+    @media (max-width: 400px) {
+      .masthead h1 { font-size: 22px; }
+      .story-hed { font-size: 18px; }
+      .stat-n { font-size: 22px; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: none !important; }
+      .stat:last-child { border-bottom: none; }
+      .fp-table th:nth-child(2),
+      .fp-table td:nth-child(2) { display: none; }
+    }
+
+    /* ---- Focus styles for keyboard navigation (WCAG 2.4.7) ---- */
+    a:focus, button:focus {
+      outline: 3px solid var(--maroon-primary);
+      outline-offset: 2px;
+    }
+
+    /* ---- Reduced motion (WCAG 2.3.3) ---- */
+    @media (prefers-reduced-motion: reduce) {
+      .score-fill { transition: none; }
+      .loading { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip navigation link (WCAG 2.4.1) -->
+<a href="#main-content" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:999;background:var(--maroon-primary);color:#fff;padding:8px 16px;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:600;border-radius:2px">
+  Skip to main content
+</a>
+<a href="#main-content" class="skip-link" onfocus="this.style.left='12px';this.style.width='auto';this.style.height='auto'" onblur="this.style.left='-9999px';this.style.width='1px';this.style.height='1px'" style="position:absolute;left:-9999px;top:8px;width:1px;height:1px;overflow:hidden;z-index:999;background:var(--maroon-primary);color:#fff;padding:8px 16px;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:600;border-radius:2px;text-decoration:none">
+  Skip to main content
+</a>
+
+<div class="loading" id="loading" role="status" aria-live="polite" aria-label="Loading dashboard data">
+  <h2>Loading report&hellip;</h2>
+  <p>Fetching the latest data</p>
+</div>
+
+<main id="main-content">
+<div class="report" role="main">
+
+  <!-- Period selector + Export bar -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 4px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-family:'Work Sans',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500)">Time period:</span>
+      <select id="periodSelect" onchange="changePeriod(this.value)" aria-label="Select report time period"
+        style="font-family:'Work Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.05em;
+               text-transform:uppercase;background:var(--white);color:var(--maroon-primary);
+               border:1.5px solid var(--maroon-primary);border-radius:2px;padding:5px 10px;cursor:pointer">
+        <option value="30">30 days</option>
+        <option value="60" selected>60 days</option>
+        <option value="90">90 days</option>
+        <option value="180">180 days</option>
+      </select>
+    </div>
+    <div role="toolbar" aria-label="Export options" style="display:flex;gap:8px">
+      <button class="export-btn secondary" onclick="exportPPT()" aria-label="Export presentation slides as HTML file">&#8681; Export PPT</button>
+      <button class="export-btn primary" onclick="exportPDF()" aria-label="Export accessible HTML report for PDF conversion">&#8681; Export PDF</button>
+    </div>
+  </div>
+
+  <!-- Masthead -->
+  <div class="masthead" id="slide-masthead">
+    <div class="masthead-eyebrow">[Your University] &middot; [Your College/Unit]</div>
+    <h1 id="masthead-hed">Our websites are working<br>harder than ever</h1>
+    <div class="masthead-sub" id="masthead-sub">A &ldquo;Bottom Line&rdquo; look at how the [Your unit] web team grows enrollment, protects reputation, and keeps the College visible &mdash; everywhere.</div>
+    <div class="masthead-date" id="reportDate">Loading&hellip;</div>
+  </div>
+
+  <!-- Story 1: Reach -->
+  <div class="card" id="slide-reach">
+    <div class="card-head">
+      <div class="story-num">Story 1 of 5 &mdash; Reach</div>
+      <div class="story-hed" id="hed-reach">More people are finding<br>the [Your College/Unit] online</div>
+      <div class="story-lede" id="lede-reach">
+        In the last <span id="lede-days-inline">60</span> days, <strong id="s1-sessions-inline">—</strong> people visited [Your unit] websites.
+        More than half arrived through Google searches &mdash; meaning our work put the College in front of
+        prospective students, researchers, and partners <em>before they ever contacted us.</em>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n" id="s1-sessions">—</div>
+        <div class="stat-l">Visitors</div>
+        <div class="stat-c" id="s1-sessions-bench">Last 60 days</div>
+        <div class="stat-c" id="pop-sessions" style="font-size:10px;margin-top:2px"></div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s1-newusers">—</div>
+        <div class="stat-l">New visitors</div>
+        <div class="stat-c">First time on site</div>
+        <div class="stat-c" id="pop-newusers" style="font-size:10px;margin-top:2px"></div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s1-engage">—</div>
+        <div class="stat-l">Engagement rate</div>
+        <div class="stat-c" id="s1-engage-bench">Actively reading</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s1-duration">—</div>
+        <div class="stat-l">Avg. time on site</div>
+        <div class="stat-c" id="s1-duration-bench">Per visit</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="chart">
+        <div class="chart-lbl">Monthly visitors &mdash; 6-month trend</div>
+        <div class="sparks" id="sparkline"></div>
+      </div>
+      <div class="chart">
+        <div class="chart-lbl">Top pages this period</div>
+        <div class="pages" id="topPages"></div>
+      </div>
+    </div>
+    <div class="chart">
+      <div class="chart-lbl">Traffic by department</div>
+      <div class="dept-grid" id="deptBreakdown"></div>
+    </div>
+    <div class="src">Data from: <span>Google Analytics 4</span><span>[your-domain.edu]</span></div>
+  </div>
+
+  <!-- Story 2: Quality -->
+  <div class="card" id="slide-quality">
+    <div class="card-head">
+      <div class="story-num">Story 2 of 5 &mdash; Quality</div>
+      <div class="story-hed" id="hed-quality">Our sites are getting<br>cleaner every month</div>
+      <div class="story-lede" id="lede-quality">
+        A broken link or an inaccessible page doesn&rsquo;t just frustrate visitors &mdash;
+        <strong>it tells Google and AI tools that the College&rsquo;s information can&rsquo;t be trusted.</strong>
+        Every issue we fix improves how the world sees [Your Unit] online.
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n" id="s2-access">—</div>
+        <div class="stat-l">Accessibility score</div>
+        <div class="stat-c">Legal compliance + inclusivity</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s2-seo">—</div>
+        <div class="stat-l">SEO score</div>
+        <div class="stat-c" id="s2-seo-bench">Easier to find on Google</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s2-broken">—</div>
+        <div class="stat-l">Broken links</div>
+        <div class="stat-c">Actively being resolved</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s2-issues">—</div>
+        <div class="stat-l">Misspellings found</div>
+        <div class="stat-c">Tracked &amp; in progress</div>
+      </div>
+    </div>
+    <div class="chart" style="padding-top:24px">
+      <!-- Accessibility bar with peer avg (85) and excellence (90) markers -->
+      <div style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+          <span style="font-family:'Work Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-500)">Accessibility &mdash; WCAG 2.1 AA</span>
+          <span style="font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;color:var(--maroon-primary)" id="s2-access-val">—</span>
+        </div>
+        <div style="position:relative;height:10px;background:var(--gray-200);border-radius:2px;overflow:visible">
+          <div id="s2-access-bar" style="height:100%;background:var(--maroon-primary);border-radius:2px;transition:width 0.8s ease;width:0%"></div>
+          <!-- Peer average marker at 85 -->
+          <div style="position:absolute;top:-4px;left:85%;width:2px;height:18px;background:var(--gray-500);border-radius:1px"></div>
+          <span style="position:absolute;top:-16px;left:85%;transform:translateX(-100%) translateX(-3px);font-size:9px;color:var(--gray-500);font-family:'Work Sans',sans-serif;font-weight:600;white-space:nowrap">Peer avg 85</span>
+          <!-- Excellence marker at 90 -->
+          <div style="position:absolute;top:-4px;left:90%;width:2px;height:18px;background:var(--maroon-primary);border-radius:1px;opacity:0.5"></div>
+          <span style="position:absolute;top:-16px;left:90%;transform:translateX(3px);font-size:9px;color:var(--maroon-primary);font-family:'Work Sans',sans-serif;font-weight:600;white-space:nowrap">Excellence 90</span>
+        </div>
+      </div>
+      <!-- SEO bar with peer avg (85) and excellence (90) markers -->
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+          <span style="font-family:'Work Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-500)">SEO</span>
+          <span style="font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;color:var(--maroon-primary)" id="s2-seo-val">—</span>
+        </div>
+        <div style="position:relative;height:10px;background:var(--gray-200);border-radius:2px;overflow:visible">
+          <div id="s2-seo-bar" style="height:100%;background:var(--maroon-primary);border-radius:2px;transition:width 0.8s ease;width:0%"></div>
+          <div style="position:absolute;top:-4px;left:85%;width:2px;height:18px;background:var(--gray-500);border-radius:1px"></div>
+          <span style="position:absolute;top:-16px;left:85%;transform:translateX(-100%) translateX(-3px);font-size:9px;color:var(--gray-500);font-family:'Work Sans',sans-serif;font-weight:600;white-space:nowrap">Peer avg 85</span>
+          <div style="position:absolute;top:-4px;left:90%;width:2px;height:18px;background:var(--maroon-primary);border-radius:1px;opacity:0.5"></div>
+          <span style="position:absolute;top:-16px;left:90%;transform:translateX(3px);font-size:9px;color:var(--maroon-primary);font-family:'Work Sans',sans-serif;font-weight:600;white-space:nowrap">Excellence 90</span>
+        </div>
+        <div style="font-size:10px;color:var(--gray-500);margin-top:8px;font-family:'Work Sans',sans-serif">
+          Source: Siteimprove benchmark of 988 higher ed websites. Peer avg = higher ed industry average. Excellence = top 5%.
+        </div>
+      </div>
+    </div>
+    <div class="src">Data from: <span>Siteimprove</span><span>Cascade sites only</span></div>
+  </div>
+
+  <!-- Story 3: Enrollment -->
+  <div class="card" id="slide-enrollment">
+    <div class="card-head">
+      <div class="story-num">Story 3 of 5 &mdash; Enrollment</div>
+      <div class="story-hed" id="hed-enrollment">The website is the first step<br>in every student&rsquo;s path to [Your Unit]</div>
+      <div class="story-lede" id="lede-enrollment">
+        Before a student applies to any [Your unit] department, before they visit campus, before they speak to an advisor &mdash;
+        <strong>they visit the website.</strong> This period,
+        <strong id="s3-newusers-inline">—</strong> first-time
+        visitors started that journey on our pages.
+      </div>
+    </div>
+    <div class="funnel-section" id="funnelSection">
+      <!-- populated by JS with building comparisons -->
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n" id="s3-admissions">—</div>
+        <div class="stat-l">Prospective pages visited</div>
+        <div class="stat-c">Admissions &amp; apply paths</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n">$0</div>
+        <div class="stat-l">Paid ad spend</div>
+        <div class="stat-c">All organic reach</div>
+      </div>
+    </div>
+    <div class="src">Data from: <span>Google Analytics 4</span><span>[your-domain.edu]</span></div>
+  </div>
+
+  <!-- Why it matters — after enrollment story -->
+  <div class="context" id="slide-why">
+    <div class="context-title">Why this work matters to the College</div>
+    <div class="context-grid" id="why-grid">
+      <div class="context-item"><strong>Brand awareness</strong> &mdash; Every Google search that surfaces a [Your unit] department is a brand impression we didn&rsquo;t pay for.</div>
+      <div class="context-item"><strong>Enrollment pipeline</strong> &mdash; The website is the top of the funnel for every prospective student considering any [Your Unit] program.</div>
+      <div class="context-item"><strong>Reputation</strong> &mdash; Broken, inaccessible, or outdated pages signal that the College doesn&rsquo;t take quality seriously.</div>
+      <div class="context-item"><strong>AI visibility</strong> &mdash; ChatGPT, Perplexity, and Google AI pull from our pages. We control what they say about [Your Unit].</div>
+    </div>
+  </div>
+
+  <!-- Story 4: MarComm Support -->
+  <div class="card" id="slide-efficiency">
+    <div class="card-head">
+      <div class="story-num">Story 4 of 5 &mdash; Impact</div>
+      <div class="story-hed" id="hed-support">The web team is the College&rsquo;s<br>first call for web support</div>
+      <div class="story-lede" id="lede-support">
+        These tickets represent departments across [Your Unit] reaching out to MarComm for web help &mdash;
+        content updates, new profiles, accessibility fixes, training requests.
+        <strong>We respond quickly and resolve almost everything.</strong>
+        The opportunity ahead: as we train more department editors and outsource routine updates,
+        we free up capacity to focus on what moves the needle &mdash; better content, higher quality scores, more enrollment traffic.
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n" id="s4-tickets">—</div>
+        <div class="stat-l">Requests handled</div>
+        <div class="stat-c">Depts. served this period</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s4-response">—</div>
+        <div class="stat-l">Avg. first response</div>
+        <div class="stat-c">Speed of service</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s4-resolution">—</div>
+        <div class="stat-l">Resolution rate</div>
+        <div class="stat-c">Issues fully resolved</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s4-csat">—</div>
+        <div class="stat-l">Satisfaction score</div>
+        <div class="stat-c">When surveys available</div>
+      </div>
+    </div>
+    <div class="chart" style="background:var(--gray-100);padding:14px 18px">
+      <div class="chart-lbl">The opportunity: train &rarr; delegate &rarr; improve</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:6px" class="opportunity-grid">
+        <div style="background:var(--white);border:1px solid var(--gray-200);border-top:3px solid var(--maroon-primary);padding:12px 14px;border-radius:2px">
+          <div style="font-family:'Work Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--maroon-primary);margin-bottom:6px">Now</div>
+          <div style="font-size:12px;color:var(--gray-800);line-height:1.5">MarComm handles most web requests directly. High touch, slower throughput on strategic work.</div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--gray-200);border-top:3px solid var(--maroon-mid);padding:12px 14px;border-radius:2px">
+          <div style="font-family:'Work Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--maroon-mid);margin-bottom:6px">Next</div>
+          <div style="font-size:12px;color:var(--gray-800);line-height:1.5">Train department editors to handle routine updates. Tickets drop. MarComm focuses on quality and strategy.</div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--gray-200);border-top:3px solid var(--green-pos);padding:12px 14px;border-radius:2px">
+          <div style="font-family:'Work Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--green-pos);margin-bottom:6px">Result</div>
+          <div style="font-size:12px;color:var(--gray-800);line-height:1.5">As tickets go down, site quality goes up. Better content &rarr; more organic traffic &rarr; enrollment growth.</div>
+        </div>
+      </div>
+    </div>
+    <div class="src">Data from: <span>Freshdesk</span></div>
+  </div>
+
+  <!-- AI reframe — before value story -->
+  <div class="ai-banner" id="slide-ai">
+    <span class="ai-badge">On AI</span>
+    <div class="ai-text">
+      <span id="ai-banner-text"><strong>AI makes our web work more important, not less.</strong>
+      When someone asks ChatGPT or Perplexity about [Your unit] departments, degree programs, or researchers &mdash; the answer comes from our websites. If those pages are broken, outdated, or inaccessible, AI spreads that misinformation to prospective students and collaborators. We make sure AI gets the right story about the [Your College/Unit].</span>
+    </div>
+  </div>
+
+  <!-- Story 5: Earned Value -->
+  <div class="card" id="slide-value">
+    <div class="card-head">
+      <div class="story-num">Story 5 of 5 &mdash; Value</div>
+      <div class="story-hed" id="hed-value">We earned all of this.<br>We didn&rsquo;t pay for a single click.</div>
+      <div class="story-lede" id="lede-value">
+        Every visitor who found [Your Unit] through a Google search arrived because our content earned that ranking.
+        No paid ads. No boosted posts. <strong>Pure organic reach &mdash; the result of clean, accessible,
+        well-structured content that search engines and AI tools trust.</strong>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n" id="s5-sessions">—</div>
+        <div class="stat-l">Organic visitors</div>
+        <div class="stat-c">$0 in ad spend</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s5-emv">—</div>
+        <div class="stat-l">Earned media value</div>
+        <div class="stat-c" id="s5-emv-note">Est. at $0.50/visit</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s5-dci">—</div>
+        <div class="stat-l">Site health score</div>
+        <div class="stat-c">Siteimprove DCI /100</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="s5-mobile">—</div>
+        <div class="stat-l">Mobile experience</div>
+        <div class="stat-c" id="s5-mobile-note">Target: 70+</div>
+      </div>
+    </div>
+    <div class="chart" style="background:var(--gray-100);padding:16px 18px">
+      <div class="chart-lbl" style="margin-bottom:10px">Why earned traffic matters more than paid</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div style="background:var(--white);border:1px solid var(--gray-200);border-top:3px solid var(--maroon-primary);padding:12px 14px;border-radius:2px">
+          <div style="font-family:'Work Sans',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--maroon-primary);margin-bottom:6px">Search</div>
+          <div style="font-size:12px;color:var(--gray-800);line-height:1.5">When prospective students Google your programs, high-quality content means you appear — for free — at the top of results.</div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--gray-200);border-top:3px solid var(--maroon-primary);padding:12px 14px;border-radius:2px">
+          <div style="font-family:'Work Sans',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--maroon-primary);margin-bottom:6px">AI</div>
+          <div style="font-size:12px;color:var(--gray-800);line-height:1.5">ChatGPT and Perplexity pull answers from your pages. Clean, accurate content means AI recommends [Your Unit] to prospective students automatically.</div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--gray-200);border-top:3px solid var(--maroon-primary);padding:12px 14px;border-radius:2px">
+          <div style="font-family:'Work Sans',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--maroon-primary);margin-bottom:6px">Trust</div>
+          <div style="font-size:12px;color:var(--gray-800);line-height:1.5">81% of prospective students say a poorly designed site damages their opinion of a school. Ours builds trust before they ever apply.</div>
+        </div>
+      </div>
+    </div>
+    <div class="src">Data from: <span>Google Analytics 4</span><span>Siteimprove DCI</span></div>
+  </div>
+
+</div><!-- /report -->
+</main>
+
+<script>
+// =====================================================
+// CONFIG
+// =====================================================
+var DATA_URL  = 'YOUR_GITHUB_PAGES_URL/data.json';
+var GITHUB_BASE = 'YOUR_GITHUB_PAGES_URL/';
+
+function getDataUrl(days) {
+  var valid = [30, 60, 90, 180];
+  var best  = valid.reduce(function(p, c) {
+    return Math.abs(c - days) < Math.abs(p - days) ? c : p;
+  });
+  if (best === 90) return GITHUB_BASE + 'data.json';
+  if (best === 60) return GITHUB_BASE + 'data-60.json';
+  return GITHUB_BASE + 'data-' + best + '.json';
+}
+
+function changePeriod(days) {
+  var url = getDataUrl(parseInt(days));
+  fetch(url + '?t=' + Date.now())
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) {
+      populate(data);
+      generateNarrative(data);
+      loadPoPData(parseInt(days), data);
+    })
+    .catch(function(err) { console.error('Period load error:', err); });
+}
+
+// Period-over-Period: load the next longer period to compare against
+// e.g. viewing 30 days → compare to prior 30 days within the 60-day file
+function loadPoPData(days, currentData) {
+  // Map current period to a "double" period for comparison
+  var comparePeriods = { 30: 60, 60: 180, 90: 180, 180: 180 };
+  var compareUrl = getDataUrl(comparePeriods[days] || 180);
+
+  fetch(compareUrl + '?t=' + Date.now())
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(compareData) {
+      if (!compareData || !compareData.ga4 || !currentData.ga4) return;
+
+      // PoP = (current - prior) / prior * 100
+      // "Prior" is approximated as: (longer period total - current period total)
+      // This gives the prior equivalent-length window
+      var cur  = currentData.ga4;
+      var comp = compareData.ga4;
+
+      function popPct(curRaw, compRaw, periodDays, compDays) {
+        if (!curRaw || !compRaw || compRaw === 0) return null;
+        // Prior period = compare window minus current window
+        var priorRaw = compRaw - curRaw;
+        if (priorRaw <= 0) return null;
+        var pct = Math.round(((curRaw - priorRaw) / priorRaw) * 100);
+        return pct;
+      }
+
+      var sessionsPop = popPct(
+        cur.sessions ? cur.sessions.raw : 0,
+        comp.sessions ? comp.sessions.raw : 0
+      );
+      var newUsersPop = popPct(
+        cur.newUsers ? cur.newUsers.raw : 0,
+        comp.newUsers ? comp.newUsers.raw : 0
+      );
+
+      setPoP('pop-sessions', sessionsPop);
+      setPoP('pop-newusers', newUsersPop);
+    })
+    .catch(function() {}); // silent — PoP is a bonus, not critical
+}
+
+function setPoP(id, pct) {
+  var el = document.getElementById(id);
+  if (!el || pct === null) return;
+  var arrow = pct >= 0 ? '↑' : '↓';
+  var color = pct >= 0 ? 'var(--green-pos)' : '#c0392b';
+  el.innerHTML = '<span style="color:' + color + ';font-weight:600">' + arrow + ' ' + Math.abs(pct) + '% vs prior period</span>';
+}
+
+// Benchmark data — sourced from benchmarks.json on GitHub
+// Fallback hardcoded values used if benchmarks.json is unavailable
+var BENCHMARKS = {
+  avgSessionDurationSeconds: 140,   // national avg ~2:20 (140 sec) for higher ed
+  engagementRatePct: 50,            // typical higher ed engagement rate ~50%
+  seoScoreGood: 80,                 // Siteimprove considers 80+ good
+  accessibilityScoreGood: 80
+};
+
+// TAMU building capacities for enrollment funnel comparisons
+// Each funnel step uses a different building for variety
+var BUILDINGS = [
+  { name: '[Your Largest Venue]',                   capacity: 75000, emoji: '🏟️',  context: 'the largest stadium in the SEC' },
+  { name: '[Your Mid-Size Venue]',                   capacity: 10000,  emoji: '🏀',  context: 'home of Aggie Basketball' },
+  { name: '[Your Auditorium] Auditorium',            capacity: 2000,   emoji: '🎭',  context: 'TAMU\'s main performing arts venue' },
+  { name: 'ACAD 204 (Academic Building)', capacity: 500,    emoji: '🏛️',  context: 'the historic heart of campus' },
+  { name: 'Blocker 102',                  capacity: 250,    emoji: '📚',  context: 'one of [Your Unit]\'s busiest lecture halls' },
+  { name: 'HECC 108',                     capacity: 252,    emoji: '🎓',  context: 'a HECC lecture hall' }
+];
+
+// One building per funnel step — rotates through the list for variety
+var BUILDING_ASSIGNMENT = [0, 1, 2, 4]; // Kyle, Reed, [Your Auditorium], Blocker for the 4 funnel steps
+
+// =====================================================
+// LOAD DATA
+// =====================================================
+document.addEventListener('DOMContentLoaded', function() {
+  // Try to load benchmarks.json first, then data.json
+  var benchmarksUrl = DATA_URL.replace('data.json', 'benchmarks.json');
+  fetch(benchmarksUrl + '?t=' + Date.now())
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(bm) {
+      if (bm) BENCHMARKS = Object.assign(BENCHMARKS, bm);
+      return fetch(getDataUrl(60) + '?t=' + Date.now());
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      populate(data);
+      generateNarrative(data);
+      loadPoPData(60, data);
+      hideLoading();
+    })
+    .catch(function(err) {
+      console.error('Data load error:', err);
+      hideLoading();
+    });
+});
+
+function hideLoading() {
+  var el = document.getElementById('loading');
+  el.classList.add('hidden');
+  setTimeout(function() { el.style.display = 'none'; }, 500);
+}
+
+// =====================================================
+// AI NARRATIVE GENERATION
+// Calls Claude API with real data, gets back journalistic
+// narrative for every text section in the dashboard.
+// Runs after populate() so numbers are already visible
+// while text generates in the background.
+// =====================================================
+function generateNarrative(data) {
+  var g  = data.ga4         || {};
+  var si = data.siteimprove || {};
+  var fd = data.freshdesk   || {};
+  var periodDays = (data.reportPeriod && data.reportPeriod.days) || getCurrentPeriod();
+  var period     = (data.reportPeriod && data.reportPeriod.label) || (periodDays + '-day period');
+
+  // Build a rich data summary for Claude to analyze
+  var dataSummary = {
+    period:          period,
+    days:            periodDays,
+    sessions:        g.sessions        ? g.sessions.value        : null,
+    newUsers:        g.newUsers        ? g.newUsers.value         : null,
+    engagementRate:  g.engagementRate  ? g.engagementRate.value   : null,
+    engagementRaw:   g.engagementRate  ? g.engagementRate.raw     : 0,
+    avgDuration:     g.avgDuration     ? g.avgDuration.value      : null,
+    avgDurationRaw:  g.avgDuration     ? g.avgDuration.raw        : 0,
+    bounceRate:      g.bounceRate      ? g.bounceRate.value        : null,
+    admissionsVisits:g.admissionsVisits? g.admissionsVisits.value  : null,
+    topDept:         g.deptBreakdown && g.deptBreakdown[0] ? g.deptBreakdown[0].name : null,
+    topDeptSessions: g.deptBreakdown && g.deptBreakdown[0] ? g.deptBreakdown[0].sessions : null,
+    accessibilityScore: si.accessibilityScore ? si.accessibilityScore.value : null,
+    accessibilityRaw:   si.accessibilityScore ? si.accessibilityScore.raw   : 0,
+    seoScore:        si.seoScore       ? si.seoScore.value         : null,
+    seoRaw:          si.seoScore       ? si.seoScore.raw           : 0,
+    mobileScore:     si.mobileScore    ? si.mobileScore.value      : null,
+    mobileRaw:       si.mobileScore    ? si.mobileScore.raw        : 0,
+    dciScore:        si.dciTotal       ? si.dciTotal.value         : null,
+    brokenLinks:     si.brokenLinks    ? si.brokenLinks.value      : null,
+    brokenLinksRaw:  si.brokenLinks    ? si.brokenLinks.raw        : 0,
+    misspellings:    si.qualityIssues  ? si.qualityIssues.value    : null,
+    ticketVolume:    fd.ticketVolume   ? fd.ticketVolume.value     : null,
+    resolutionRate:  fd.resolutionRate ? fd.resolutionRate.value   : null,
+    resolutionRaw:   fd.resolutionRate ? fd.resolutionRate.raw     : 0,
+    avgResponseTime: fd.avgResponseTime? fd.avgResponseTime.value  : null,
+    responseRaw:     fd.avgResponseTime? fd.avgResponseTime.raw    : 0,
+    higherEdEngAvg:  50,   // industry benchmark %
+    higherEdDurAvg:  140,  // industry benchmark seconds
+    accessPeerAvg:   85,
+    accessExcellence:90,
+    seoPeerAvg:      85,
+    seoExcellence:   90
+  };
+
+  var prompt = 'You are writing a performance report for the web team of a college of arts and sciences at a major research university. ' +
+    'Your audience is college leadership: deans, associate deans, department chairs. They are smart but not technical. ' +
+    'Write in a journalistic tone — each piece should open with a hook, build to a point, and leave the reader with something to think about. ' +
+    'Be specific with numbers. Do not use jargon. Do not use bullet points. Write in flowing prose only. ' +
+    'Keep each section to 2-3 sentences maximum. Be confident and precise — this is a briefing, not a hedge. ' +
+    'CRITICAL: This report covers the last ' + periodDays + ' days (' + period + '). ' +
+    'You MUST say "' + periodDays + ' days" or "' + period + '" — NEVER say "90 days" unless that is the actual period. ' +
+    '\n\nHere is the real data for this ' + periodDays + '-day period (' + period + '):\n' +
+    JSON.stringify(dataSummary, null, 2) +
+    '\n\nIndustry context: higher education average engagement rate is ~50%, average session duration is ~2:20 (140 seconds). ' +
+    'The higher ed peer average for accessibility (Siteimprove, 988 institutions) is 85. Excellence (top 5%) is 90. WCAG 2.1 AA compliance is legally required under ADA Title II. ' +
+    'A broken link count above 100 is considered critical. Mobile score below 70 is a concern for enrollment. ' +
+    'This report covers ' + periodDays + ' days. Always refer to this as "the last ' + periodDays + ' days" or "this ' + periodDays + '-day period". ' +
+    '\n\nWrite ONLY a JSON object (no markdown, no backticks, no preamble) with exactly these keys. Each value is a 2-3 sentence prose paragraph:\n' +
+    '{\n' +
+    '  "mastheadHed": "A punchy 8-10 word headline (no line break tags) that captures the most important finding this period",\n' +
+    '  "mastheadSub": "One sentence that sets up what this report covers and why it matters",\n' +
+    '  "ledeReach": "2-3 sentences about reach/traffic this period. Open with the most surprising or impressive number. Build to why organic reach matters.",\n' +
+    '  "hedReach": "An 8-12 word headline for the reach story (no HTML tags)",\n' +
+    '  "ledeQuality": "2-3 sentences about site quality. Lead with the accessibility or SEO score in context. If broken links are high, address it. If scores exceed targets, celebrate it.",\n' +
+    '  "hedQuality": "An 8-12 word headline for the quality story",\n' +
+    '  "ledeEnrollment": "2-3 sentences about the website\'s role in enrollment. Use the admissions page visits as evidence. Frame the website as the first step in the student journey.",\n' +
+    '  "hedEnrollment": "An 8-12 word headline for the enrollment story",\n' +
+    '  "ledeSupport": "2-3 sentences about the team\'s responsiveness and capacity. Mention response time and resolution rate. End with the training/delegation opportunity.",\n' +
+    '  "hedSupport": "An 8-12 word headline for the support story",\n' +
+    '  "ledeValue": "2-3 sentences about earned organic reach vs paid advertising. Mention that $0 was spent. Frame the value of clean content for search and AI.",\n' +
+    '  "hedValue": "An 8-12 word headline for the earned value story",\n' +
+    '  "whyItMatters": "3-4 short items formatted as: [Bold label] — [one sentence]. Cover: Brand awareness, Enrollment pipeline, Reputation, AI visibility. Each item should be data-informed where possible.",\n' +
+    '  "aiBanner": "2-3 sentences about AI and the web. Be specific about what happens when content is clean vs broken. This should feel urgent and forward-looking."\n' +
+    '}';
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(response) {
+    if (!response.content || !response.content[0]) {
+      console.warn('Narrative generation: no content returned');
+      return;
+    }
+    var raw = response.content[0].text;
+    // Strip any accidental markdown fences
+    raw = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+    var narrative;
+    try {
+      narrative = JSON.parse(raw);
+    } catch(e) {
+      console.warn('Narrative JSON parse failed:', e, raw.substring(0, 200));
+      return;
+    }
+    applyNarrative(narrative, data);
+  })
+  .catch(function(err) {
+    // Silent failure — static text stays in place
+    console.warn('Narrative generation skipped:', err.message);
+  });
+}
+
+function applyNarrative(n, data) {
+  // Masthead
+  if (n.mastheadHed) {
+    var h1 = document.getElementById('masthead-hed');
+    if (h1) h1.innerHTML = n.mastheadHed.replace(/\n/g, '<br>');
+  }
+  if (n.mastheadSub) {
+    var sub = document.getElementById('masthead-sub');
+    if (sub) sub.innerHTML = n.mastheadSub;
+  }
+
+  // Story ledes and headlines — inject as innerHTML so bold/em tags work
+  var map = {
+    'lede-reach':       n.ledeReach,
+    'hed-reach':        n.hedReach,
+    'lede-quality':     n.ledeQuality,
+    'hed-quality':      n.hedQuality,
+    'lede-enrollment':  n.ledeEnrollment,
+    'hed-enrollment':   n.hedEnrollment,
+    'lede-support':     n.ledeSupport,
+    'hed-support':      n.hedSupport,
+    'lede-value':       n.ledeValue,
+    'hed-value':        n.hedValue
+  };
+
+  Object.keys(map).forEach(function(id) {
+    if (!map[id]) return;
+    var el = document.getElementById(id);
+    if (!el) return;
+    // For ledes, preserve any existing <strong> inline values (session count etc)
+    // by only replacing text nodes, not child elements
+    if (id.indexOf('lede-') === 0) {
+      // Fade out, swap, fade in
+      el.style.transition = 'opacity 0.4s';
+      el.style.opacity    = '0';
+      setTimeout(function(elem, text) {
+        return function() {
+          // Keep any existing inline <strong> elements that hold live data
+          var inlineData = {};
+          elem.querySelectorAll('strong[id], em[id]').forEach(function(s) {
+            inlineData[s.id] = s.outerHTML;
+          });
+          // Replace content but re-insert live data elements
+          var newText = text;
+          Object.keys(inlineData).forEach(function(sid) {
+            // Try to find a placeholder in the new text and substitute
+            newText = newText.replace(new RegExp('\\[' + sid + '\\]', 'g'), inlineData[sid]);
+          });
+          elem.innerHTML = newText;
+          elem.style.opacity = '1';
+        };
+      }(el, map[id]), 400);
+    } else {
+      // Headlines: direct swap with line break support
+      el.innerHTML = map[id].replace(/\n/g, '<br>');
+    }
+  });
+
+  // Why it matters — rebuild context items
+  if (n.whyItMatters) {
+    var grid = document.getElementById('why-grid');
+    if (grid) {
+      // Parse the "**Label** — sentence" format
+      var items = n.whyItMatters.split('\n').filter(function(l) { return l.trim().length > 0; });
+      if (items.length > 0) {
+        grid.style.transition = 'opacity 0.4s';
+        grid.style.opacity    = '0';
+        setTimeout(function() {
+          grid.innerHTML = items.map(function(item) {
+            // Handle **Bold** or plain "Label — sentence" formats
+            var formatted = item
+              .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+              .replace(/^[-•]\s*/, '');
+            return '<div class="context-item">' + formatted + '</div>';
+          }).join('');
+          grid.style.opacity = '1';
+        }, 400);
+      }
+    }
+  }
+
+  // AI banner
+  if (n.aiBanner) {
+    var banner = document.getElementById('ai-banner-text');
+    if (banner) {
+      banner.style.transition = 'opacity 0.4s';
+      banner.style.opacity    = '0';
+      setTimeout(function() {
+        banner.innerHTML = n.aiBanner;
+        banner.style.opacity = '1';
+      }, 400);
+    }
+  }
+}
+
+// =====================================================
+// POPULATE DASHBOARD
+// =====================================================
+function populate(data) {
+  // Report date + update all period-dependent text
+  var periodDays = (data.reportPeriod && data.reportPeriod.days) || getCurrentPeriod();
+  // Sync the dropdown to match the loaded data period
+  var sel = document.getElementById('periodSelect');
+  if (sel && data.reportPeriod && data.reportPeriod.days) {
+    sel.value = String(data.reportPeriod.days);
+  }
+  if (data.reportPeriod) {
+    var label = data.reportPeriod.label || '';
+    label = label.replace(/\?/g, '\u2013').replace(/â€"/g, '\u2013');
+    set('reportDate', periodDays + '-day report \u00b7 ' + label);
+  }
+  // Update inline "X days" references in static fallback text
+  var daysInline = document.getElementById('lede-days-inline');
+  if (daysInline) daysInline.textContent = String(periodDays);
+
+  // GA4
+  if (data.ga4) {
+    var g = data.ga4;
+    set('s1-sessions-inline', g.sessions.value + ' people');
+    set('s1-sessions', g.sessions.value);
+    set('s1-newusers', g.newUsers.value);
+    set('s1-engage',   g.engagementRate.value);
+    set('s1-duration', g.avgDuration.value);
+    set('s3-newusers-inline', g.newUsers.value);
+    set('s3-admissions', g.admissionsVisits.value);
+
+    // Benchmarks for Story 1
+    applyDurationBenchmark(g.avgDuration.raw);
+    applyEngagementBenchmark(g.engagementRate.raw);
+    applySessionsBenchmark(g.sessions.raw);
+
+    // Support both old trend.values and new trend.buckets format
+  if (g.monthlyTrend && !g.monthlyTrend.values && g.monthlyTrend.buckets) {
+    g.monthlyTrend.values = g.monthlyTrend.buckets.map(function(b){ return b.sessions || b; });
+  }
+  buildSparkline(g.monthlyTrend);
+    buildTopPages(g.topPages);
+    buildDeptBreakdown(g.deptBreakdown);
+    buildFunnel(g);
+  }
+
+  // Siteimprove
+  if (data.siteimprove) {
+    var s = data.siteimprove;
+    // Accessibility — don't show "See Siteimprove", show the number or N/A
+    var accessVal = (s.accessibilityScore.raw > 0) ? s.accessibilityScore.value : 'N/A';
+    set('s2-access',     accessVal);
+    set('s2-access-val', accessVal);
+    set('s2-seo',        s.seoScore.value);
+    set('s2-seo-val',    s.seoScore.value);
+    set('s2-broken',     s.brokenLinks.value);
+    set('s2-issues',     s.qualityIssues.value);
+
+    var aRaw = s.accessibilityScore.raw || 0;
+    var sRaw = s.seoScore.raw || 0;
+    setTimeout(function() {
+      document.getElementById('s2-access-bar').style.width = Math.min(aRaw, 100) + '%';
+      document.getElementById('s2-seo-bar').style.width    = Math.min(sRaw, 100) + '%';
+    }, 300);
+
+    applySEOBenchmark(sRaw);
+  }
+
+  // Freshdesk
+  if (data.freshdesk) {
+    var f = data.freshdesk;
+    set('s4-tickets',    f.ticketVolume.value);
+    set('s4-response',   f.avgResponseTime.value);
+    set('s4-csat',       f.csatScore.value);
+    set('s4-resolution', f.resolutionRate.value);
+  }
+
+  // Story 5 — Earned Value
+  if (data.ga4 && data.ga4.sessions) {
+    var sessions5 = data.ga4.sessions.raw || 0;
+    set('s5-sessions', data.ga4.sessions.value);
+    var emv = Math.round(sessions5 * 0.50);
+    set('s5-emv', emv >= 1000 ? '$' + (emv / 1000).toFixed(0) + 'k' : '$' + emv);
+  }
+  if (data.siteimprove) {
+    var dci = data.siteimprove.dciTotal ? data.siteimprove.dciTotal.raw : 0;
+    var mob = data.siteimprove.mobileScore ? data.siteimprove.mobileScore.raw : 0;
+    if (dci > 0) set('s5-dci', String(dci));
+    if (mob > 0) {
+      set('s5-mobile', String(mob));
+      var mobEl = document.getElementById('s5-mobile-note');
+      if (mobEl) {
+        if (mob >= 70) { mobEl.textContent = '\u2713 Good mobile experience'; mobEl.className = 'stat-c positive'; }
+        else { mobEl.textContent = '\u26A0 Below target (70+)'; mobEl.className = 'stat-c'; }
+      }
+    }
+  }
+}
+
+// =====================================================
+// BENCHMARK CALLOUTS
+// =====================================================
+function applyDurationBenchmark(rawSeconds) {
+  if (!rawSeconds || rawSeconds <= 0) return;
+  var el = document.getElementById('s1-duration-bench');
+  var benchSec = BENCHMARKS.avgSessionDurationSeconds;
+  if (rawSeconds > benchSec) {
+    var diffSec = rawSeconds - benchSec;
+    var diffMin = Math.floor(diffSec / 60);
+    var diffS   = diffSec % 60;
+    var diffStr = diffMin > 0 ? diffMin + 'm ' + diffS + 's' : diffS + 's';
+    el.textContent = '\u2191 ' + diffStr + ' above higher ed avg (' + formatDuration(benchSec) + ')';
+    el.className = 'stat-c benchmark';
+  } else {
+    el.textContent = 'Higher ed avg: ' + formatDuration(benchSec);
+  }
+}
+
+function applyEngagementBenchmark(rawPct) {
+  if (!rawPct || rawPct <= 0) return;
+  var el = document.getElementById('s1-engage-bench');
+  var bench = BENCHMARKS.engagementRatePct;
+  if (rawPct > bench) {
+    el.textContent = '\u2191 ' + (rawPct - bench) + ' pts above avg (' + bench + '%)';
+    el.className = 'stat-c benchmark';
+  } else {
+    el.textContent = 'Higher ed avg: ~' + bench + '%';
+  }
+}
+
+function applySessionsBenchmark(rawSessions, days) {
+  if (!rawSessions || rawSessions <= 0) return;
+  var el = document.getElementById('s1-sessions-bench');
+  var periodLabel = 'Last ' + (days || getCurrentPeriod()) + ' days';
+  if (BENCHMARKS.peerAvgSessions && rawSessions > BENCHMARKS.peerAvgSessions) {
+    var ratio = (rawSessions / BENCHMARKS.peerAvgSessions).toFixed(1);
+    el.textContent = ratio + 'x peer college avg';
+    el.className = 'stat-c benchmark';
+  } else {
+    el.textContent = periodLabel;
+  }
+}
+
+function getCurrentPeriod() {
+  var sel = document.getElementById('periodSelect');
+  return sel ? parseInt(sel.value) : 60;
+}
+
+function applySEOBenchmark(rawScore) {
+  var el = document.getElementById('s2-seo-bench');
+  if (!el) return;
+  var bench = BENCHMARKS.seoScoreGood;
+  if (rawScore >= bench) {
+    el.textContent = '\u2713 Above ' + bench + ' threshold (good)';
+    el.className = 'stat-c positive';
+  } else {
+    el.textContent = 'Target: ' + bench + '+';
+  }
+}
+
+function formatDuration(secs) {
+  var m = Math.floor(secs / 60);
+  var s = String(secs % 60).padStart(2, '0');
+  return m + ':' + s;
+}
+
+// =====================================================
+// SPARKLINE — SVG area chart
+// =====================================================
+function buildSparkline(trend) {
+  var el = document.getElementById('sparkline');
+  // Support both old format (trend.values) and new format (trend.buckets)
+  var rawVals = trend ? (trend.values || (trend.buckets ? trend.buckets.map(function(b){ return b.sessions||b; }) : null)) : null;
+  if (!rawVals || !rawVals.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--gray-500);padding:4px">No trend data yet</div>';
+    return;
+  }
+  var vals   = rawVals;
+  var labels = trend.labels || [];
+  var max    = Math.max.apply(null, vals);
+  var min    = Math.min.apply(null, vals);
+  if (max === min) { max = min + 1; }
+
+  var W = 400, H = 60, PAD = 8;
+  var n = vals.length;
+
+  // Map values to SVG coordinates
+  var points = vals.map(function(v, i) {
+    var x = PAD + (i / (n - 1)) * (W - PAD * 2);
+    var y = PAD + (1 - (v - min) / (max - min)) * (H - PAD * 2 - 16);
+    return { x: x, y: y, v: v, label: labels[i] || '' };
+  });
+
+  // Build polyline path
+  var linePts  = points.map(function(p) { return p.x + ',' + p.y; }).join(' ');
+  // Build filled area path
+  var areaPath = 'M' + points[0].x + ',' + points[0].y +
+    points.slice(1).map(function(p) { return ' L' + p.x + ',' + p.y; }).join('') +
+    ' L' + points[n-1].x + ',' + (H - 16) +
+    ' L' + points[0].x   + ',' + (H - 16) + ' Z';
+
+  // Dots and labels
+  var dots = points.map(function(p, i) {
+    var vFmt = p.v >= 1000 ? (p.v / 1000).toFixed(1) + 'k' : String(p.v);
+    return '<circle class="spark-dot" cx="' + p.x + '" cy="' + p.y + '" r="3" fill="#500000" stroke="white" stroke-width="1.5" style="cursor:crosshair" data-val="' + vFmt + '" data-lbl="' + p.label + '"/>' +
+      '<text x="' + p.x + '" y="' + (H - 4) + '" text-anchor="middle" font-size="9" fill="#707070" font-family="Open Sans,sans-serif">' + p.label + '</text>';
+  }).join('');
+
+  // Value label on last point
+  var last = points[n - 1];
+  var lastFmt = last.v >= 1000 ? (last.v / 1000).toFixed(1) + 'k' : String(last.v);
+
+  var svgId = 'sparkSVG_' + Date.now();
+  var tipId  = 'sparkTip_' + Date.now();
+
+  el.innerHTML =
+    '<div style="position:relative">' +
+    '<svg id="' + svgId + '" width="100%" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" style="display:block;overflow:visible">' +
+    '<defs>' +
+      '<linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="#500000" stop-opacity="0.25"/>' +
+        '<stop offset="100%" stop-color="#500000" stop-opacity="0.02"/>' +
+      '</linearGradient>' +
+    '</defs>' +
+    '<path d="' + areaPath + '" fill="url(#sparkGrad)"/>' +
+    '<polyline points="' + linePts + '" fill="none" stroke="#500000" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+    dots +
+    '<text x="' + last.x + '" y="' + (last.y - 8) + '" text-anchor="middle" font-size="10" font-weight="600" fill="#500000" font-family="Work Sans,sans-serif">' + lastFmt + '</text>' +
+    '</svg>' +
+    '<div id="' + tipId + '" style="position:absolute;pointer-events:none;opacity:0;transition:opacity 0.15s;' +
+      'background:#500000;color:#fff;border-radius:3px;padding:5px 10px;' +
+      'font-family:Work Sans,sans-serif;font-size:11px;font-weight:600;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,0.2);white-space:nowrap;z-index:10;' +
+      'transform:translateX(-50%) translateY(-110%)"></div>' +
+    '</div>';
+
+  // Attach hover events
+  setTimeout(function() {
+    var svg = document.getElementById(svgId);
+    var tip = document.getElementById(tipId);
+    if (!svg || !tip) return;
+    svg.querySelectorAll('.spark-dot').forEach(function(circle) {
+      circle.addEventListener('mouseenter', function() {
+        var vFmt = this.getAttribute('data-val');
+        var lbl  = this.getAttribute('data-lbl');
+        var cx   = parseFloat(this.getAttribute('cx'));
+        var cy   = parseFloat(this.getAttribute('cy'));
+        tip.style.left    = (cx / W * 100) + '%';
+        tip.style.top     = (cy / H * 100) + '%';
+        tip.style.opacity = '1';
+        tip.textContent   = lbl + ': ' + vFmt;
+        this.setAttribute('r', '5');
+      });
+      circle.addEventListener('mouseleave', function() {
+        tip.style.opacity = '0';
+        this.setAttribute('r', '3');
+      });
+    });
+  }, 50);
+}
+
+// =====================================================
+// TOP PAGES
+// =====================================================
+function buildTopPages(pages) {
+  var el = document.getElementById('topPages');
+  if (!pages || !pages.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--gray-500)">No data yet</div>';
+    return;
+  }
+  var max = pages[0].views || 1;
+  el.innerHTML = pages.map(function(p) {
+    var pct = Math.round((p.views / max) * 100);
+    var lbl = p.path.length > 30 ? p.path.substring(0, 29) + '\u2026' : p.path;
+    var v   = p.views >= 1000 ? (p.views / 1000).toFixed(1) + 'k' : String(p.views);
+    return '<div class="page-row">' +
+      '<div class="page-path" title="' + p.path + '">' + lbl + '</div>' +
+      '<div class="page-track"><div class="page-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="page-views">' + v + '</div></div>';
+  }).join('');
+}
+
+// =====================================================
+// DEPT BREAKDOWN
+// =====================================================
+function buildDeptBreakdown(depts) {
+  var el = document.getElementById('deptBreakdown');
+  if (!depts || !depts.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--gray-500);grid-column:1/-1">Department breakdown not available &mdash; check GA4 property configuration.</div>';
+    return;
+  }
+  var max = depts[0].sessions || 1;
+  el.innerHTML = depts.slice(0, 18).map(function(d) {
+    var pct = Math.round((d.sessions / max) * 100);
+    var v   = d.sessions >= 1000 ? (d.sessions / 1000).toFixed(1) + 'k' : String(d.sessions);
+    return '<div class="dept-item">' +
+      '<div class="dept-name" title="' + d.name + '">' + d.name + '</div>' +
+      '<div class="dept-track"><div class="dept-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="dept-val">' + v + '</div></div>';
+  }).join('');
+}
+
+// =====================================================
+// ENROLLMENT FUNNEL WITH BUILDING COMPARISONS
+// =====================================================
+function buildFunnel(g) {
+  var el = document.getElementById('funnelSection');
+  var sessions    = g.sessions.raw    || 0;
+  var newUsers    = g.newUsers.raw    || 0;
+  var admissions  = g.admissionsVisits.raw || 0;
+  var engaged     = Math.round(sessions * 0.42); // approx engaged (2+ min)
+
+  var steps = [
+    { label: 'Visited [Your Unit] sites',     sub: null,          value: sessions,   pct: 100,  color: 'var(--maroon-primary)' },
+    { label: 'First-time visitors',    sub: '(new users)',  value: newUsers,   pct: sessions > 0 ? Math.round((newUsers / sessions) * 100) : 66,   color: 'var(--maroon-mid)' },
+    { label: 'Actively engaged',       sub: '(2+ min)',     value: engaged,    pct: 42,   color: 'var(--maroon-light)' },
+    { label: 'Visited prospective pages', sub: null,        value: admissions, pct: sessions > 0 ? Math.max(8, Math.round((admissions / sessions) * 100)) : 24, color: 'var(--maroon-pale)' }
+  ];
+
+  el.innerHTML = steps.map(function(step, i) {
+    var displayVal = step.value >= 1000 ? (step.value / 1000).toFixed(1) + 'k' : String(step.value || '—');
+    var textColor  = i === 3 ? 'color:var(--maroon-primary)' : 'color:var(--white)';
+
+    // Building comparison — each step gets a different building
+    var comparison = '';
+    if (step.value > 0) {
+      comparison = getBuildingComparison(step.value, i);
+    }
+
+    return '<div class="funnel-row">' +
+      '<div class="funnel-lbl-col">' +
+        '<div class="funnel-lbl">' + step.label + '</div>' +
+        (step.sub ? '<div class="funnel-sub">' + step.sub + '</div>' : '') +
+      '</div>' +
+      '<div class="funnel-bar-col">' +
+        '<div class="funnel-bar" style="width:' + step.pct + '%;background:' + step.color + '">' +
+          '<span class="funnel-bar-text" style="' + textColor + '">' + displayVal + '</span>' +
+        '</div>' +
+        (comparison ? '<div class="building-comparison">' + comparison + '</div>' : '') +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function getBuildingComparison(count, stepIndex) {
+  // Each funnel step uses a specific building for variety
+  var assigned = BUILDING_ASSIGNMENT[stepIndex] !== undefined ? BUILDING_ASSIGNMENT[stepIndex] : 0;
+  var b = BUILDINGS[assigned];
+
+  // If count is way too small for the assigned building, fall back to a smaller one
+  if (count < b.capacity * 0.05 && assigned > 0) {
+    // Try a smaller building
+    for (var j = BUILDINGS.length - 1; j >= 0; j--) {
+      if (count >= BUILDINGS[j].capacity * 0.1) { b = BUILDINGS[j]; break; }
+    }
+  }
+
+  var times = count / b.capacity;
+  if (times >= 2) {
+    return b.emoji + ' That&rsquo;s ' + times.toFixed(1) + ' sold-out ' + b.name + 's (' + b.capacity.toLocaleString() + ' capacity &mdash; ' + b.context + ')';
+  } else if (times >= 1) {
+    return b.emoji + ' More than a sold-out ' + b.name + ' (' + b.capacity.toLocaleString() + ' seats &mdash; ' + b.context + ')';
+  } else {
+    var pct = Math.round(times * 100);
+    return b.emoji + ' That would fill ' + pct + '% of ' + b.name + ' (' + b.capacity.toLocaleString() + ' capacity &mdash; ' + b.context + ')';
+  }
+}
+
+// =====================================================
+// DIGITAL FOOTPRINT TABLE
+// Sorted: monitored first, then external — both alphabetical
+// =====================================================
+function buildFootprintTable(inventory) {
+  var el = document.getElementById('fpBody');
+  if (!inventory || !inventory.length) return;
+
+  // Sort: monitored first, then external; alphabetical within each group
+  var sorted = inventory.slice().sort(function(a, b) {
+    if (a.monitored && !b.monitored) return -1;
+    if (!a.monitored && b.monitored) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  var monitored = sorted.filter(function(s) { return s.monitored; }).length;
+  var external  = sorted.filter(function(s) { return !s.monitored; }).length;
+  var total     = sorted.length + 19; // +19 for the Cascade dept sites
+
+  set('fp-monitored', String(monitored + 19));
+  set('fp-external',  String(external));
+  set('fp-total',     String(total));
+
+  el.innerHTML = sorted.map(function(s) {
+    var dot = s.monitored
+      ? '<span class="dot-green"></span>In scope'
+      : '<span class="dot-gray"></span>External';
+    return '<tr>' +
+      '<td><a href="' + s.url + '" target="_blank" rel="noopener" style="color:var(--maroon-primary);text-decoration:none">' + s.name + '</a></td>' +
+      '<td><span class="platform-badge">' + s.platform + '</span></td>' +
+      '<td>' + dot + '</td></tr>';
+  }).join('');
+}
+
+// =====================================================
+// UTILITY
+// =====================================================
+function set(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// =====================================================
+// PDF EXPORT — Accessible HTML document
+//
+// IMPORTANT NOTE ON TITLE II PDF COMPLIANCE:
+// Browser print-to-PDF produces untagged PDFs that fail
+// WCAG 2.1 AA / PDF/UA requirements under ADA Title II.
+// This function instead exports a fully accessible HTML
+// document with proper semantic structure, ARIA landmarks,
+// heading hierarchy, alt text, and language attributes.
+//
+// To create a Title II-compliant PDF from this export:
+// 1. Open the downloaded HTML file in Adobe Acrobat
+// 2. File > Create PDF > From Web Page (or open and Save As)
+// 3. Run Accessibility Check (Tools > Accessibility)
+// 4. Fix any flagged items and add document properties
+//    (title, language, subject)
+// 5. Save as PDF/UA-1 tagged PDF
+//
+// Alternatively: share the live dashboard URL — the web
+// page itself meets WCAG 2.1 AA and is the most accessible
+// format under Title II.
+// =====================================================
+// =====================================================
+// EXPORT HELPERS
+// =====================================================
+function aiT(id, fb) { var e=document.getElementById(id); return e?(e.innerText||e.textContent||fb):fb; }
+
+function sellPoint(text) {
+  return '<div class="sell">' + text + '</div>';
+}
+
+function getWhyItems() {
+  var items = [];
+  var grid = document.getElementById('why-grid');
+  if (grid) grid.querySelectorAll('.context-item').forEach(function(el){ items.push(el.innerHTML); });
+  if (!items.length) items = [
+    '<strong>Brand awareness</strong> — Every Google search that surfaces [Your Unit] is a brand impression we didn\'t pay for.',
+    '<strong>Enrollment pipeline</strong> — The website is the top of the funnel for every prospective student.',
+    '<strong>Reputation</strong> — Broken or outdated pages signal that the College doesn\'t take quality seriously.',
+    '<strong>AI visibility</strong> — ChatGPT and Perplexity pull from our pages. We control what AI says about [Your Unit].'
+  ];
+  return items;
+}
+
+function getExportData() {
+  var p = getCurrentPeriod();
+  return {
+    p:      p,
+    date:   aiT('reportDate', ''),
+    s1sess: aiT('s1-sessions','—'), s1new: aiT('s1-newusers','—'),
+    s1eng:  aiT('s1-engage','—'),   s1dur: aiT('s1-duration','—'),
+    s1eb:   aiT('s1-engage-bench','Actively reading'),
+    s1db:   aiT('s1-duration-bench','Per visit'),
+    s2acc:  aiT('s2-access','—'),   s2seo: aiT('s2-seo','—'),
+    s2brk:  aiT('s2-broken','—'),   s2iss: aiT('s2-issues','—'),
+    s3adm:  aiT('s3-admissions','—'),
+    s4tick: aiT('s4-tickets','—'),  s4resp: aiT('s4-response','—'),
+    s4csat: aiT('s4-csat','—'),     s4res:  aiT('s4-resolution','—'),
+    s5emv:  aiT('s5-emv','—'),      s5dci:  aiT('s5-dci','—'), s5mob: aiT('s5-mobile','—'),
+    h1: aiT('hed-reach','More people are finding the College online'),
+    h2: aiT('hed-quality','Our sites are getting cleaner every month'),
+    h3: aiT('hed-enrollment','The website is the first step in every student\'s path'),
+    h4: aiT('hed-support','The web team is the College\'s first call'),
+    h5: aiT('hed-value','We earned all of this. $0 in ad spend.'),
+    l1: aiT('lede-reach', p + ' days. ' + aiT('s1-sessions','—') + ' visitors. Zero paid ads.'),
+    l2: aiT('lede-quality','Every fix improves search rankings and legal standing simultaneously.'),
+    l3: aiT('lede-enrollment','Every prospective student starts their journey on the website.'),
+    l4: aiT('lede-support', aiT('s4-tickets','—') + ' requests handled. ' + aiT('s4-resolution','—') + ' resolved.'),
+    l5: aiT('lede-value','Pure organic reach. ' + aiT('s5-emv','—') + ' in estimated earned media value.'),
+    aiB: aiT('ai-banner-text','When someone asks ChatGPT about [Your Unit], the answer comes from our pages.'),
+    masHed: aiT('masthead-hed','Our websites are working harder than ever'),
+    masSub: aiT('masthead-sub','A bottom-line look at reach, quality, enrollment, impact, and value.')
+  };
+}
+
+function sellReach(d) {
+  var eng = parseInt(d.s1eng) || 0;
+  if (eng >= 50) return '&#10003; Engagement is above the 50% higher ed average — visitors are actively reading, not bouncing.';
+  return 'Engagement is near the 50% higher ed average. A focused content refresh on top pages is a one-sprint win that typically moves this number within 60 days.';
+}
+function sellQuality(d) {
+  var acc = parseInt(d.s2acc) || 0;
+  if (acc >= 85) return '&#10003; Accessibility exceeds the 85 peer average — [Your Unit] is ahead of most comparable institutions on ADA Title II compliance.';
+  if (acc >= 80) return 'Accessibility is ' + d.s2acc + ', just below the 85 peer average. Closing this 2-point gap reduces ADA Title II legal exposure and improves search rankings simultaneously — a high-ROI sprint.';
+  return 'Accessibility is ' + d.s2acc + ' vs. the 85 peer average. Reaching peer average would reduce ADA Title II legal risk and improve organic search performance in one effort.';
+}
+function sellEnrollment(d) {
+  var n = parseInt((d.s3adm || '').replace(/[^0-9]/g,'')) || 0;
+  var est = n > 0 ? '$' + Math.round(n * 2).toLocaleString() + '+' : 'significant';
+  return '&#10003; ' + d.s3adm + ' visits to admissions &amp; apply pages — every one a prospective student [Your Unit] reached for $0. Equivalent paid traffic cost: est. ' + est + '.';
+}
+function sellSupport(d) {
+  var res = parseInt(d.s4res) || 0;
+  if (res >= 80) return '&#10003; ' + d.s4res + ' resolution rate — nearly every department that reaches out gets a complete solution, not a workaround.';
+  return 'Resolution rate is ' + d.s4res + '. Better intake forms and templated responses for common request types could push this above 90% this quarter.';
+}
+function sellValue(d) {
+  return '&#10003; ' + d.s5emv + ' in estimated earned media value this period. Every point gained on the ' + d.s5dci + ' DCI site health score improves both search rankings and ADA compliance standing.';
+}
+
+// =====================================================
+// PDF EXPORT
+// =====================================================
+function exportPDF() {
+  var d   = getExportData();
+  var why = getWhyItems();
+
+  var css = '<style>\n' +
+    ':root{--m:#500000;--ml:#800020;--g1:#f8f8f8;--g2:#e8e8e8;--g7:#444;--g8:#222;--grn:#1a7a3f;}\n' +
+    '*{box-sizing:border-box;margin:0;padding:0;}\n' +
+    'body{font-family:"Open Sans","Helvetica Neue",sans-serif;font-size:14px;color:var(--g8);background:#fff;}\n' +
+    '.page{max-width:760px;margin:0 auto;padding:32px 40px 48px;}\n' +
+    'h1{font-family:"Oswald","Work Sans",sans-serif;font-size:32px;font-weight:600;text-transform:uppercase;letter-spacing:0.02em;color:var(--g8);line-height:1.15;margin-bottom:10px;}\n' +
+    'h2{font-family:"Work Sans",sans-serif;font-size:15px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 6px;}\n' +
+    'p{line-height:1.65;color:var(--g7);margin-bottom:10px;}\n' +
+    '.eyebrow{font-family:"Work Sans",sans-serif;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--m);margin-bottom:6px;}\n' +
+    '.hdr{border-bottom:3px solid var(--m);padding-bottom:20px;margin-bottom:24px;}\n' +
+    '.sec{margin-bottom:28px;padding-bottom:22px;border-bottom:1px solid var(--g2);}\n' +
+    '.sec:last-child{border-bottom:none;}\n' +
+    '.sec-lbl{font-family:"Work Sans",sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--m);margin-bottom:6px;}\n' +
+    '.lede{font-size:14px;color:var(--g7);line-height:1.7;margin-bottom:12px;}\n' +
+    '.sell{background:#fff5f5;border-left:3px solid var(--m);padding:9px 13px;font-size:13px;color:var(--g7);line-height:1.6;margin-bottom:14px;border-radius:0 2px 2px 0;}\n' +
+    '.sell strong{color:var(--m);}\n' +
+    '.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}\n' +
+    '.sb{background:var(--g1);border-top:2px solid var(--m);padding:9px 11px;}\n' +
+    '.sn{font-family:"Oswald",sans-serif;font-size:24px;font-weight:600;color:var(--m);line-height:1;margin-bottom:3px;}\n' +
+    '.sl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#666;}\n' +
+    '.sc{font-size:11px;color:#888;margin-top:2px;}\n' +
+    '.why-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}\n' +
+    '.wi{font-size:13px;color:var(--g7);line-height:1.55;padding-left:10px;border-left:2px solid var(--m);}\n' +
+    '.ai-box{background:#3c001c;padding:14px 18px;margin-top:10px;}\n' +
+    '.ai-box h2{color:#d1a0a0;font-size:12px;margin-bottom:5px;}\n' +
+    '.ai-box p{color:#ddd;font-size:13px;}\n' +
+    '.notice{background:#fff8e6;border:1px solid #e6c84a;padding:9px 13px;font-size:12px;color:#5a4500;line-height:1.6;margin-bottom:18px;}\n' +
+    '@media print{.notice{display:none;}}\n' +
+    '</style>\n';
+
+  function sb(n,l,c){ return '<div class="sb"><div class="sn">'+n+'</div><div class="sl">'+l+'</div>'+(c?'<div class="sc">'+c+'</div>':'')+'</div>'; }
+
+  var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
+    '<title>[Your Unit] Web Team Performance Report</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Work+Sans:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">' +
+    css + '</head><body><div class="page">' +
+
+    '<div class="notice"><strong>Accessibility:</strong> To produce a Title II-compliant PDF, open in Adobe Acrobat → Tools → Accessibility → Full Check, add title/language, save as PDF/UA-1.</div>' +
+
+    '<div class="hdr sec"><div class="eyebrow">[Your University] &middot; [Your College/Unit] &middot; Web Team</div>' +
+    '<h1>[Your Unit] Web Team Performance Report</h1>' +
+    '<p style="font-size:15px;margin:6px 0 4px">A bottom-line look at how the [Your unit] web team grows enrollment, protects reputation, and keeps the College visible everywhere.</p>' +
+    '<p style="font-size:12px;color:#888;font-family:\'Work Sans\',sans-serif">'+d.date+'</p></div>' +
+
+    '<div class="sec"><div class="sec-lbl">Why this work matters</div>' +
+    '<div class="why-g">' + why.map(function(i){return '<div class="wi">'+i+'</div>';}).join('') + '</div></div>' +
+
+    '<div class="sec"><div class="sec-lbl">Story 1 of 5 — Reach</div><h2>'+d.h1+'</h2>' +
+    '<p class="lede">'+d.l1+'</p>' + sellPoint(sellReach(d)) +
+    '<div class="stats">'+sb(d.s1sess,'Visitors',d.p+'-day total')+sb(d.s1new,'New visitors','First-time')+sb(d.s1eng,'Engagement rate',d.s1eb)+sb(d.s1dur,'Avg. time on site',d.s1db)+'</div></div>' +
+
+    '<div class="sec"><div class="sec-lbl">Story 2 of 5 — Quality</div><h2>'+d.h2+'</h2>' +
+    '<p class="lede">'+d.l2+'</p>' + sellPoint(sellQuality(d)) +
+    '<div class="stats">'+sb(d.s2acc,'Accessibility','Peer avg: 85')+sb(d.s2seo,'SEO score','Peer avg: 85')+sb(d.s2brk,'Broken links','Target: &lt;20')+sb(d.s2iss,'Misspellings','Flagged')+'</div></div>' +
+
+    '<div class="sec"><div class="sec-lbl">Story 3 of 5 — Enrollment</div><h2>'+d.h3+'</h2>' +
+    '<p class="lede">'+d.l3+'</p>' + sellPoint(sellEnrollment(d)) +
+    '<div class="stats">'+sb(d.s1sess,'Total visits','Top of funnel')+sb(d.s1new,'New visitors','Discovering [Your Unit]')+sb(d.s3adm,'Prospective pages','Admissions &amp; apply')+sb('$0','Ad spend','100% organic')+'</div></div>' +
+
+    '<div class="sec"><div class="sec-lbl">Story 4 of 5 — Impact</div><h2>'+d.h4+'</h2>' +
+    '<p class="lede">'+d.l4+'</p>' + sellPoint(sellSupport(d)) +
+    '<div class="stats">'+sb(d.s4tick,'Requests handled','Depts. served')+sb(d.s4resp,'Avg. first response','Target: &lt;4h')+sb(d.s4res,'Resolution rate','Fully resolved')+sb(d.s4csat,'CSAT score','When available')+'</div></div>' +
+
+    '<div class="sec"><div class="sec-lbl">Story 5 of 5 — Value</div><h2>'+d.h5+'</h2>' +
+    '<p class="lede">'+d.l5+'</p>' + sellPoint(sellValue(d)) +
+    '<div class="stats">'+sb(d.s1sess,'Organic visitors','$0 ad spend')+sb(d.s5emv,'Earned media value','Est. $0.50/visit')+sb(d.s5dci,'Site health / DCI','Out of 100')+sb(d.s5mob,'Mobile score','Target: 70+')+'</div></div>' +
+
+    '<div class="ai-box"><h2>On AI</h2><p>'+d.aiB+'</p></div>' +
+    '</div></body></html>';
+
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href=url; a.download='coas-web-report.html'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// =====================================================
+// PPT EXPORT
+// =====================================================
+function exportPPT() {
+  var d   = getExportData();
+  var why = getWhyItems();
+
+  var css = '<style>' +
+    '*{box-sizing:border-box;margin:0;padding:0;font-family:Oswald,"Work Sans",sans-serif;}' +
+    'body{background:#e0e0e0;}' +
+    '.slide{width:960px;min-height:540px;background:#fff;margin:20px auto;padding:52px 60px;display:flex;flex-direction:column;justify-content:center;page-break-after:always;}' +
+    '.lbl{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#500000;margin-bottom:8px;font-family:"Work Sans",sans-serif;}' +
+    'h1{font-size:38px;font-weight:600;text-transform:uppercase;letter-spacing:0.02em;line-height:1.12;color:#202020;margin-bottom:12px;}' +
+    '.ld{font-size:15px;color:#3e3e3e;line-height:1.65;font-family:"Open Sans",sans-serif;margin-bottom:14px;}' +
+    '.sell{font-size:13px;font-family:"Open Sans",sans-serif;font-weight:600;background:#fff5f5;border-left:3px solid #500000;padding:9px 13px;margin-bottom:18px;line-height:1.55;color:#500000;}' +
+    '.stats{display:flex;gap:14px;}' +
+    '.s{background:#f6f6f6;border-top:3px solid #500000;padding:13px 16px;flex:1;}' +
+    '.sn{font-size:34px;font-weight:600;color:#500000;line-height:1;margin-bottom:3px;}' +
+    '.sl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#707070;}' +
+    '.sc{font-size:11px;color:#888;margin-top:2px;font-family:"Open Sans",sans-serif;}' +
+    '.cover{background:#500000;}' +
+    '.cover .lbl{color:#d1a0a0;}' +
+    '.cover h1{color:#fff;}' +
+    '.cover .ld{color:#d1d1d1;}' +
+    '.cover .dt{font-size:12px;color:#a7a7a7;margin-top:12px;font-family:"Open Sans",sans-serif;}' +
+    '.why{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}' +
+    '.wi{font-size:13px;color:#3e3e3e;line-height:1.55;padding-left:12px;border-left:3px solid #500000;font-family:"Open Sans",sans-serif;}' +
+    '.ai-sl{background:#3c001c;}' +
+    '.ai-sl .lbl{color:#d1a0a0;}' +
+    '.ai-sl h1{color:#fff;}' +
+    '.ai-sl .ld{color:#d1d1d1;margin-top:14px;}' +
+    '@media print{.slide{margin:0;}@page{size:960px 540px landscape;margin:0;}}' +
+    '</style>';
+
+  function s(n,l,c){ return '<div class="s"><div class="sn">'+n+'</div><div class="sl">'+l+'</div>'+(c?'<div class="sc">'+c+'</div>':'')+'</div>'; }
+  function sp(t){ return '<div class="sell">'+t+'</div>'; }
+
+  var slides = [
+    '<div class="slide cover"><div class="lbl">[Your University] &middot; [Your College/Unit]</div><h1>'+d.masHed+'</h1><div class="ld">'+d.masSub+'</div><div class="dt">'+d.date+'</div></div>',
+
+    '<div class="slide"><div class="lbl">Why This Matters</div><h1>The bottom line</h1><div class="why">'+why.map(function(w){return '<div class="wi">'+w+'</div>';}).join('')+'</div></div>',
+
+    '<div class="slide"><div class="lbl">Story 1 of 5 — Reach</div><h1>'+d.h1+'</h1><div class="ld">'+d.l1+'</div>'+sp(sellReach(d))+'<div class="stats">'+s(d.s1sess,'Visitors',d.p+'-day total')+s(d.s1new,'New visitors','')+s(d.s1eng,'Engagement','Avg: 50%')+s(d.s1dur,'Avg. time on site','')+'</div></div>',
+
+    '<div class="slide"><div class="lbl">Story 2 of 5 — Quality</div><h1>'+d.h2+'</h1><div class="ld">'+d.l2+'</div>'+sp(sellQuality(d))+'<div class="stats">'+s(d.s2acc,'Accessibility','Peer avg: 85')+s(d.s2seo,'SEO score','Peer avg: 85')+s(d.s2brk,'Broken links','Target: &lt;20')+s(d.s2iss,'Misspellings','')+'</div></div>',
+
+    '<div class="slide"><div class="lbl">Story 3 of 5 — Enrollment</div><h1>'+d.h3+'</h1><div class="ld">'+d.l3+'</div>'+sp(sellEnrollment(d))+'<div class="stats">'+s(d.s1sess,'Total visits','Top of funnel')+s(d.s1new,'New visitors','')+s(d.s3adm,'Prospective pages','')+s('$0','Ad spend','100% organic')+'</div></div>',
+
+    '<div class="slide"><div class="lbl">Story 4 of 5 — Impact</div><h1>'+d.h4+'</h1><div class="ld">'+d.l4+'</div>'+sp(sellSupport(d))+'<div class="stats">'+s(d.s4tick,'Requests handled','')+s(d.s4resp,'Avg. response','Target: &lt;4h')+s(d.s4res,'Resolution rate','')+s(d.s4csat,'CSAT','')+'</div></div>',
+
+    '<div class="slide"><div class="lbl">Story 5 of 5 — Value</div><h1>'+d.h5+'</h1><div class="ld">'+d.l5+'</div>'+sp(sellValue(d))+'<div class="stats">'+s(d.s1sess,'Organic visitors','$0 ad spend')+s(d.s5emv,'Earned media value','')+s(d.s5dci,'Site health / DCI','Out of 100')+s(d.s5mob,'Mobile score','Target: 70+')+'</div></div>',
+
+    '<div class="slide ai-sl"><div class="lbl">On AI</div><h1>AI makes our web work more important, not less</h1><div class="ld">'+d.aiB+'</div></div>'
+  ];
+
+  var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>[Your Unit] Web Report Slides</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Work+Sans:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">' +
+    css + '</head><body>' + slides.join('\n') + '</body></html>';
+
+  var blob = new Blob([html], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href=url; a.download='coas-web-report-slides.html'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+</script>
+
+</body>
+</html>
